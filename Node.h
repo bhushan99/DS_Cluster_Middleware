@@ -12,7 +12,7 @@ public:
 	void heartBeat();
 	string getIp();
 	string getPort();
-	void sendMessage(string ip, string port, string msg);
+	string sendMessage(string ip, string port, string msg);
 	void receiveMessage();
 
 private:

@@ -3,10 +3,21 @@
 Node::Node(string ip, string port):ip(ip),port(port) { }
 
 void Node::startUp(){
+	thread listenMessage (&Node::receiveMessage,this);
 	
-	for(int i=0; i<2; i++){
-		sendMessage(ips[i],ports[i],"1:");
+	for(int i=0; i<10; i++){
+		
+		if(port != ports[i]){
+			string res = sendMessage(ips[i],ports[i],to_string(IAmUp)+":"+to_string(stoi(port)%10));
+			if(res == "error")
+				continue;
+			else if(res[0] == '2'){
+				sentNodes.insert(i+1);
+			}
+		}
 	}
+	cout << "size of set is : " <<  sentNodes.size() << endl;
+	listenMessage.join();
 }
 
 void Node::submitJob(string execFileName, string ipFileName){
@@ -17,104 +28,87 @@ void Node::heartBeat(){
 
 }
 
-void Node::sendMessage(string ip, string port, string msg){
-	int ps_id;
-	struct sockaddr_in ps_addr;
+string Node::sendMessage(string ip, string port, string msg){
+	
+	int sockfd, portno, n;
+    struct sockaddr_in serv_addr;
+    // struct hostent *server;
 
-	if((ps_id=socket(AF_INET,SOCK_STREAM,0))==-1){
-		perror("Socket() for Communication");
-		return;
-	}
-	ps_addr.sin_family=AF_INET;
-	ps_addr.sin_addr.s_addr=inet_addr(ip.c_str());
-	ps_addr.sin_port=htons(atoi(port.c_str()));
-	int ps_len=sizeof(ps_addr);
-	pid_t pid = fork();
-	if(pid == 0){
-		// child process
-		cout << "sending IAmUp message to " << ip << endl;
-		if(connect(ps_id,(struct sockaddr *)&ps_addr,ps_len)==-1){
-			perror("connect()");
-			cout<<"Cannot connect to given ip: " << ip << endl ;
-			return;
-		}
-		write(ps_id,msg.c_str(),MAX);
-	}
-	else{
-		sleep(1);
-		kill(pid,SIGKILL);
-	}
-	return;
+    char buffer[256];
+    portno = atoi(port.c_str());
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) 
+        perror("ERROR opening socket");
+    
+    bzero((char *) &serv_addr, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = inet_addr(ip.c_str());
+    serv_addr.sin_port = htons(portno);
+    cout << "Connecting to " << ip << endl;
+    if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0){
+        perror("ERROR connecting");
+        return "error";
+    }
+    bzero(buffer,256);
+    strcpy(buffer,msg.c_str());
+    cout << "Sending message " << msg << "to" << ip << endl;
+    n = write(sockfd,buffer,strlen(buffer));
+    if (n < 0) 
+        perror("ERROR writing to socket");
+    bzero(buffer,256);
+    n = read(sockfd,buffer,255);
+    if (n < 0) 
+        perror("ERROR reading from socket");
+    cout << "Got message " << buffer << "from " << ip << endl;
+    string ret(buffer);
+    close(sockfd);
+	return buffer;
 }
 
 
 
 void Node::receiveMessage(){
-	int tr_id, cli_id;
-	struct sockaddr_in addrport, cli_addr;
-
-	if((cli_id=socket(AF_INET,SOCK_STREAM,0))==-1){
-		perror("Socket() for Peer CLient:");
-		exit(1);
+	int sockfd, newsockfd, portno;
+    socklen_t clilen;
+    char buffer[256];
+    char buffer1[256];
+    struct sockaddr_in serv_addr, cli_addr;
+    int n;
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) 
+	    perror("Server Socket ");
+    bzero((char *) &serv_addr, sizeof(serv_addr));
+    portno = atoi(port.c_str());
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
+    serv_addr.sin_port = htons(portno);
+    if (bind(sockfd, (struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) 
+    	perror("bind()");
+    while(1){
+	    listen(sockfd,5);
+	    clilen = sizeof(cli_addr);
+	    cout << "Will accept now" << endl;
+	    newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+	    if (newsockfd < 0) 
+	        perror("accept()");
+	    if(fork() == 0)
+	    	break;
 	}
-
-	addrport.sin_family=AF_INET;
-	addrport.sin_addr.s_addr=INADDR_ANY;
-	addrport.sin_port=htons(atoi(port.c_str()));
-	if(bind(cli_id,(struct sockaddr *)&addrport,sizeof(addrport))==-1)
-		perror("bind()");
-	cout << "check" << endl;
-	while(1){
-		cout << "check1" << endl;
-		if(listen(cli_id,BACKLOG)==-1)
-			perror("listen()");
-		int clilen=sizeof(cli_addr);
-		tr_id=accept(cli_id,(struct sockaddr *)&cli_addr,(socklen_t *)&clilen);
-		if(tr_id==-1){
-			perror("accept()");
-			continue;
-		}
-		if(fork()==0)
-			break;
-		cout << "check2" << endl;
-	}
-
-	int ipAddr=cli_addr.sin_addr.s_addr;
-	char str[INET_ADDRSTRLEN];
-	inet_ntop( AF_INET, &ipAddr, str, INET_ADDRSTRLEN );
-	char buf[MAX],*buffer=(char*)malloc(MAX*sizeof(char));
-	read(tr_id,buf,MAX);
-	cout << "check3" << endl;
-	cout << buf << endl;
-
-	// send message to client that it is also alive
-
-	// int ps_id;
-	// struct sockaddr_in ps_addr;
-
-	// if((ps_id=socket(AF_INET,SOCK_STREAM,0))==-1){
-	// 	perror("Socket() for Communication");
-	// 	return;
-	// }
-	// ps_addr.sin_family=AF_INET;
-	// ps_addr.sin_addr.s_addr=inet_addr(ip.c_str());
-	// ps_addr.sin_port=htons(atoi(port.c_str()));
-	// int ps_len=sizeof(ps_addr);
-	// pid_t pid = fork();
-	// if(pid == 0){
-	// 	// child process
-	// 	cout << "sending IAmUp message to " << ip << endl;
-	// 	if(connect(ps_id,(struct sockaddr *)&ps_addr,ps_len)==-1){
-	// 		perror("connect()");
-	// 		cout<<"Cannot connect to given ip: " << ip << endl ;
-	// 		return;
-	// 	}
-	// 	write(ps_id,msg.c_str(),MAX);
-	// }
-	// else{
-	// 	sleep(1);
-	// 	kill(pid,SIGKILL);
-	// }
+    bzero(buffer,256);
+    bzero(buffer1,256);
+    n = read(newsockfd,buffer,255);
+    if (n < 0) perror("ERROR reading from socket");
+    cout << buffer << endl;
+    if(buffer[0] == IAmUp+'0'){
+    	sentNodes.insert(buffer[2]-'0');   // sentNodes not working
+    	cout << buffer[2]-'0' << endl;
+    	sprintf(buffer1,"%d:",ReplyAlive);
+    }
+    cout << sentNodes.size() << endl;
+    n = write(newsockfd,buffer1,256);
+    if (n < 0) perror("ERROR writing to socket");
+    close(newsockfd);
+    close(sockfd);
 }
 
 string Node::getIp(){
