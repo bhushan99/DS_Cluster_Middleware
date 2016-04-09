@@ -1,9 +1,10 @@
 #include "Node.cpp"
 #include "Application.cpp"
 
-int main(){
-	Node node = Node("10.3.100.207","1234");
+int main(int argc, char *argv[]){
+	Node node = Node(argv[1],argv[2]);
 	cout << node.getIp() << " " << node.getPort() << endl;
+	node.startUp();
 	Application app = Application();
 	vector<int> vec;
 	for(int i=0; i<10; i++){
