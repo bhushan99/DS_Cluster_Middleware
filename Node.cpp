@@ -44,14 +44,14 @@ string Node::sendMessage(string ip, string port, string msg){
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = inet_addr(ip.c_str());
     serv_addr.sin_port = htons(portno);
-    cout << "Connecting to " << ip << endl;
+    cout << "Connecting to " << stoi(port)%10 << endl;
     if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0){
         perror("ERROR connecting");
         return "error";
     }
     bzero(buffer,256);
     strcpy(buffer,msg.c_str());
-    cout << "Sending message " << msg << "to" << ip << endl;
+    cout << "Sending message " << msg << " to " << ip << endl;
     n = write(sockfd,buffer,strlen(buffer));
     if (n < 0) 
         perror("ERROR writing to socket");
@@ -59,7 +59,7 @@ string Node::sendMessage(string ip, string port, string msg){
     n = read(sockfd,buffer,255);
     if (n < 0) 
         perror("ERROR reading from socket");
-    cout << "Got message " << buffer << "from " << ip << endl;
+    cout << "Got message " << buffer << " from " << ip << endl;
     string ret(buffer);
     close(sockfd);
 	return buffer;
@@ -91,24 +91,22 @@ void Node::receiveMessage(){
 	    newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
 	    if (newsockfd < 0) 
 	        perror("accept()");
-	    if(fork() == 0)
-	    	break;
+	    bzero(buffer,256);
+	    bzero(buffer1,256);
+	    n = read(newsockfd,buffer,255);
+	    if (n < 0) perror("ERROR reading from socket");
+	    if(buffer[0] == IAmUp+'0'){
+	    	int temp = buffer[2] - '0';
+	    	sentNodes.insert(temp);   // sentNodes not working
+	    	sprintf(buffer1,"%d:",ReplyAlive);
+	    }
+	    cout << "size of set is " << sentNodes.size() << endl;
+	    n = write(newsockfd,buffer1,256);
+	    if (n < 0) perror("ERROR writing to socket");
 	}
-    bzero(buffer,256);
-    bzero(buffer1,256);
-    n = read(newsockfd,buffer,255);
-    if (n < 0) perror("ERROR reading from socket");
-    cout << buffer << endl;
-    if(buffer[0] == IAmUp+'0'){
-    	sentNodes.insert(buffer[2]-'0');   // sentNodes not working
-    	cout << buffer[2]-'0' << endl;
-    	sprintf(buffer1,"%d:",ReplyAlive);
-    }
-    cout << sentNodes.size() << endl;
-    n = write(newsockfd,buffer1,256);
-    if (n < 0) perror("ERROR writing to socket");
-    close(newsockfd);
-    close(sockfd);
+    
+    // close(newsockfd);
+    // close(sockfd);
 }
 
 string Node::getIp(){
