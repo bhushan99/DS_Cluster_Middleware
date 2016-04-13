@@ -17,6 +17,7 @@ void Node::startUp(){
 		}
 	}
 	cout << "size of set is : " <<  sentNodes.size() << endl;
+    heartBeat();
 	listenMessage.join();
 }
 
@@ -25,11 +26,24 @@ void Node::submitJob(string execFileName, string ipFileName){
 }
 
 void Node::heartBeat(){
+    while(1){
+        sleep(HeartBeatTime);
+        cout << "HeartBeat sending started \n";
+        set<int>::iterator it;
+        for(it = sentNodes.begin(); it != sentNodes.end(); it++){
+            int curNode = *it;
+            string res = sendMessage("127.0.0.1", to_string(12340+curNode), to_string(CheckAlive)+":"+to_string(curNode));
+            if(res == "timeout"){
+                cout << sentNodes.size() << endl;
+                // call submitJob function to submit required job.
+            }
+        }
+    }
 
 }
 
 string Node::sendMessage(string ip, string port, string msg){
-	
+
 	int sockfd, portno, n;
     struct sockaddr_in serv_addr;
     // struct hostent *server;
@@ -47,7 +61,7 @@ string Node::sendMessage(string ip, string port, string msg){
     cout << "Connecting to " << stoi(port)%10 << endl;
     if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0){
         perror("ERROR connecting");
-        return "error";
+        return "timeout";
     }
     bzero(buffer,256);
     strcpy(buffer,msg.c_str());
@@ -56,7 +70,9 @@ string Node::sendMessage(string ip, string port, string msg){
     if (n < 0) 
         perror("ERROR writing to socket");
     bzero(buffer,256);
+    // wait for sometime in this read function. If dont get any read then just break it.
     n = read(sockfd,buffer,255);
+    
     if (n < 0) 
         perror("ERROR reading from socket");
     cout << "Got message " << buffer << " from " << ip << endl;
@@ -97,7 +113,7 @@ void Node::receiveMessage(){
 	    if (n < 0) perror("ERROR reading from socket");
 	    if(buffer[0] == IAmUp+'0'){
 	    	int temp = buffer[2] - '0';
-	    	sentNodes.insert(temp);   // sentNodes not working
+	    	sentNodes.insert(temp);   
 	    	sprintf(buffer1,"%d:",ReplyAlive);
 	    }
 	    cout << "size of set is " << sentNodes.size() << endl;

@@ -10,6 +10,9 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <signal.h>
+#include <future>
+#include <chrono>
 
 using namespace std;
 
@@ -18,6 +21,7 @@ using namespace std;
 #define JobAssign 3
 #define Result 4
 #define IAmUp 5
+#define HeartBeatTime 10
 
 struct Job{
 	string execFile, ipFile;
