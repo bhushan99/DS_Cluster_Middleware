@@ -4,7 +4,8 @@ Node::Node(string ip, string port):ip(ip),port(port) { }
 
 void Node::startUp(){
 	thread listenMessage (&Node::receiveMessage,this);
-	
+    listenMessage.detach();
+    	
 	for(int i=0; i<10; i++){
 		
 		if(port != ports[i]){
@@ -17,11 +18,10 @@ void Node::startUp(){
 		}
 	}
 	cout << "size of set is : " <<  sentNodes.size() << endl;
-	listenMessage.join();
 }
 
 void Node::submitJob(string execFileName, string ipFileName){
-	
+	cout << "Submit job done!! file names are: \n" << execFileName << "\n" << ipFileName << endl;
 }
 
 void Node::heartBeat(){
