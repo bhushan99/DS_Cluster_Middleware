@@ -3,7 +3,34 @@
 Application::Application(){ }
 
 vector<Job> Application::split(Job job, int n){
-
+	string in=job.ipFile, ex=job.execFile;
+	vector<Job> ans;
+	ifstream is;
+	is.open(in.c_str());
+	int x;
+	int ct=0;
+	while(is.get(x)) ct++;
+	is.close();
+	is.open(in.c_str());
+	int p=(ct+n-1)/n;
+	ofstream os;
+	for(int i=1;i<=n;i++) {
+		Job j;
+		j.execFile=ex;
+		j.ipFile=in+string("_part")+to_string(i);
+		os.open(j.ipFile.c_str());
+		int k=0;
+		while(k<p && ct) {
+			is.get(x);
+			os<<x<<endl;
+			k++; ct--;
+		}
+		os.close();
+		ans.push_back(j);
+		if(!ct) break;
+	}
+	is.close();
+	return ans;
 }
 
 int Application::merge(vector<int> result){
