@@ -13,21 +13,28 @@
 
 using namespace std;
 
+#define CheckAlive 1
+#define ReplyAlive 2
+#define JobAssign 3
+#define Result 4
+#define IAmUp 5
+
 struct Job{
 	string execFile, ipFile;
 	int jobId;
 };
 
-string ips[10] = {"10.0.0.1",
-				 "10.0.0.2",
-				 "10.0.0.3",
-				 "10.0.0.4",
-				 "10.0.0.5",
-				 "10.0.0.6",
-				 "10.0.0.7",
-				 "10.0.0.8",
-				 "10.0.0.9",
-				 "10.0.0.10"};
+string ips[10] = {"127.0.0.1",
+				 "127.0.0.1",
+				 "127.0.0.1",
+				 "127.0.0.1",
+				 "127.0.0.1",
+				 "127.0.0.1",
+				 "127.0.0.1",
+				 "127.0.0.1",
+				 "127.0.0.1",
+				 "127.0.0.1"};
+
 
 string ports[10] = {"12341",
 				 "12342",
