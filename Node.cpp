@@ -181,7 +181,23 @@ void receive_IamUP(string newnodeid) {
 }
 
 void nodeFail(string failnodeid) {
-    
+    set<Job>::iterator it;
+    if(nodeToJob.find(failnodeid)==nodeToJob.end()) return;
+    for(it=nodeToJob[failnodeid].begin();it!=nodeToJob[failnodeid].end();) {
+        Job j=*it;
+        char buf[256];
+        MD5 md5;
+        strcpy(buf,j.execFile.c_str());
+        string exf(md5.digestFile(buf));
+        strcpy(buf,j.ipFile.c_str());
+        string ipf(md5.digestFile(buf));
+        string newjid=exf+string(":")+ipf;
+        parent[newjid]=it->jobId;
+        submitJob(it->execFile,it->ipFile);
+        it++;
+    }
+    nodeToJob.erase(failnodeid);
+    return;
 }
 
 void Node::receiveMessage(){
