@@ -16,11 +16,11 @@ public:
 	void receiveMessage();
 
 private:
-	string ip,port;
+	string ip,port,ID; // ID= ip+":"+port, jobID= exFile+":"+ipFile
 	queue<Job> localQ,globalQ;
-	set<int> sentNodes; // have to send heartbeat message to this nodes.
-	map<int, set<int> > nodeToJob; // mapping for nodeid to set of jobid
-	map<int, pair<int, pair<int,int> > > inputMapping; // mapping of jobId to pair of nodeId and input (pair of index)
+	set<string> sentNodes; // have to send heartbeat message to this nodes.
+	map<string, set<string> > nodeToJob; // mapping for nodeid to set of jobid
+	map<string, pair<string, Job > > inputMapping; // mapping of jobId to pair of nodeId and input (pair of index)
 };
 
 #endif

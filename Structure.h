@@ -50,7 +50,7 @@ void up(int sem_id)
 
 struct Job{
 	string execFile, ipFile;
-	int jobId;
+	string jobId;
 };
 
 string ips[10] = {"127.0.0.1",

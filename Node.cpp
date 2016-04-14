@@ -1,6 +1,6 @@
 #include "Node.h"
 
-Node::Node(string ip, string port):ip(ip),port(port) { }
+Node::Node(string ip, string port):ip(ip),port(port) { ID=ip+string(":")+port; }
 
 void Node::startUp(){
 	thread listenMessage (&Node::receiveMessage,this);
@@ -23,6 +23,29 @@ void Node::startUp(){
 	listenMessage.join();
 }
 
+bool cmp(const pair<string,int>& p1,const pair<string,int>& p2) {
+    return p1.second<p2.second;
+}
+
+void getDestNodes(vector<pair< <string,int> >& load) {
+    sort(load.begin(),load.end(),cmp);
+    int mx=0;
+    for(int i=0;i<load.size()-1;i++) mx=max(mx,load[i+1].second-load[i].second);
+    if(!mx) return;
+    for(int i=0;i<load.size()-1;i++) {
+        if(load[i+1].second-load[i].second==mx) {
+            load=vector<pair<string,int> >(load.begin(),load.begin()+i+1);
+            return;
+        }
+    }
+} 
+
+pair<string,string> split(string NodeID) {
+    string a="";int i;
+    for(i=0;NodeID[i]!=':';i++) a+=NodeID[i];
+    return pair<string,string>(a,NodeID.substr(i+1));
+}
+
 void Node::submitJob(string execFileName, string ipFileName){
     
 	cout << "Submit job done!! file names are: \n" << execFileName << "\n" << ipFileName << endl;
@@ -32,10 +55,11 @@ void Node::heartBeat(){
     while(1){
         sleep(HeartBeatTime);
         cout << "HeartBeat sending started \n";
-        set<int>::iterator it;
+        set<string>::iterator it;
         for(it = sentNodes.begin(); it != sentNodes.end(); it++){
-            int curNode = *it;
-            string res = sendMessage("127.0.0.1", to_string(12340+curNode), to_string(CheckAlive)+":"+to_string(curNode));
+            string curNode = *it;
+            pair<string,string> p=split(curNode);
+            string res = sendMessage(p.first,p.second,to_string(CheckAlive)+":"+to_string(curNode));
             if(res == "timeout"){
                 cout << sentNodes.size() << endl;
                 // call submitJob function to submit required job.
