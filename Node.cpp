@@ -260,6 +260,14 @@ void receiveFile(){
 
 }
 
+void Node::mapFilenametoJobId(string ip, string port, string execFileName, string ipFileName, string jobId, string ownerId)
+{
+    char* message = (char*)malloc(MAX*sizeof(char));
+    sprintf(message, "%d::%s:%s:%s:%s", Mapping, execFileName.c_str(), ipFileName.c_str(), jobId.c_str(), ownerId.c_str());
+    string ret = sendMessage(ip, port, message);
+    free(message);
+}
+
 string Node::getIp(){
 	return this->ip;
 }

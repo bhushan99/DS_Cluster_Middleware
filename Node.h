@@ -17,7 +17,7 @@ public:
 	void receiveMessage();
 	string sendFile(string ip, string port, string fileName, int type);
 	void receiveFile();
-
+	void mapFilenametoJobId(string ip, string port, string execFileName, string ipFileName, string jobId, string ownerId);
 private:
 	string ip,port,ID; // ID= ip+":"+port, jobID= exFile+":"+ipFile
 	queue<Job> localQ,globalQ;
