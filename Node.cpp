@@ -14,7 +14,7 @@ void Node::startUp(){
 				continue;
 			else if(res[0] == '2'){
                 int idx = res.find("::");
-				sentNodes.insert(res.substr(i+2));
+				sentNodes.insert(res.substr(idx+2));
 			}
 		}
 	}
@@ -63,6 +63,7 @@ void Node::heartBeat(){
             pair<string,string> p=split(curNode);
             string res = sendMessage(p.first,p.second,to_string(CheckAlive)+"::"+curNode);
             if(res == "timeout"){
+                cout << curNode << " is not alive!!" << endl;
                 cout << sentNodes.size() << endl;
                 // call submitJob function to submit required job.
             }
@@ -111,7 +112,7 @@ string Node::sendMessage(string ip, string port, string msg){
     
     if(errno == EAGAIN || errno == EWOULDBLOCK)
     {
-        perror("TIMEOUT!!!!!");
+        return "timeout";
     }    
     if (n < 0) 
         perror("ERROR reading from socket");
@@ -159,6 +160,22 @@ void Node::receiveMessage(){
             strcat(buffer1,ip.c_str());
             strcat(buffer1,(":"+port).c_str());
 	    }
+        else if(buffer[0] == JobSend + '0' || buffer[0] == InputSend + '0'){
+            string fileName;
+            bool isLast;
+            string str(buffer);
+            int idx = str.find("::");
+            int idx1 = str.find(":",idx+2);
+            int idx2 = str.find(":",idx1+1);
+            fileName = str.substr(idx1+1,idx2-idx1-1);
+            isLast = ((str.substr(idx+2,idx1-idx-2) == "0")? 0 : 1);
+            string message = str.substr(idx2+1);
+            char mes[256];
+            strcpy(mes,message.c_str());
+            FILE *fp = fopen(fileName.c_str(),"a");
+            fwrite(mes,sizeof(char),sizeof(mes),fp);
+            fclose(fp); 
+        }
 	    cout << "size of set is " << sentNodes.size() << endl;
 	    n = write(newsockfd,buffer1,256);
 	    if (n < 0) perror("ERROR writing to socket");

@@ -23,6 +23,8 @@ private:
 	set<string> sentNodes; // have to send heartbeat message to this nodes.
 	map<string, set<string> > nodeToJob; // mapping for nodeid to set of jobid
 	map<string, pair<string, Job > > inputMapping; // mapping of jobId to pair of nodeId and input (pair of index)
+	map<string, FILE *> filePointer;
+	map<string, FILE *> inputPointer;
 };
 
 #endif
