@@ -75,6 +75,11 @@ string Node::sendMessage(string ip, string port, string msg){
 	int sockfd, portno, n;
     struct sockaddr_in serv_addr;
     // struct hostent *server;
+    struct timeval tv;
+
+    tv.tv_sec = 2;
+    tv.tv_usec = 0;
+
 
     char buffer[256];
     portno = atoi(port.c_str());
@@ -82,6 +87,8 @@ string Node::sendMessage(string ip, string port, string msg){
     if (sockfd < 0) 
         perror("ERROR opening socket");
     
+    setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,sizeof(struct timeval));
+
     bzero((char *) &serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = inet_addr(ip.c_str());
