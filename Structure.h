@@ -18,6 +18,7 @@
 #include <sys/ipc.h>
 #include <sys/sem.h>
 #include <fstream>
+#include "md5.h"
 
 using namespace std;
 
@@ -29,9 +30,11 @@ using namespace std;
 #define JobSend 6
 #define InputSend 7
 #define HeartBeatTime 10
-
-#define MUTEX 25
 #define TIMEOUT 1
+#define MUTEX 25
+
+#define MAX 256
+
 
 void down(int sem_id)
 {
@@ -53,7 +56,7 @@ void up(int sem_id)
 
 struct Job{
 	string execFile, ipFile;
-	string jobId;
+	string jobId,ownerId; //ownerId is ID of owner
 };
 
 string ips[10] = {"127.0.0.1",
