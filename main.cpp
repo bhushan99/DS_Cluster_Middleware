@@ -56,7 +56,8 @@ int main(int argc, char *argv[]){
 		}
 		else if(choice[0] == 'n')
 		{
-			break;
+			up(mutex);
+			continue;
 		}
 		else
 		{

@@ -9,18 +9,20 @@ void Node::startUp(){
 	for(int i=0; i<10; i++){
 		
 		if(port != ports[i]){
-			string res = sendMessage(ips[i],ports[i],to_string(IAmUp)+":"+to_string(stoi(port)%10));
+			string res = sendMessage(ips[i],ports[i],to_string(IAmUp)+"::"+ip+":"+port);
 			if(res == "error")
 				continue;
 			else if(res[0] == '2'){
-				sentNodes.insert(i+1);
+                int idx = res.find("::");
+				sentNodes.insert(res.substr(i+2));
 			}
 		}
 	}
 	cout << "size of set is : " <<  sentNodes.size() << endl;
 
-    heartBeat();
-	listenMessage.join();
+    thread heartBeatMessage (&Node::heartBeat,this);
+    heartBeatMessage.detach();
+	// listenMessage.join();
 }
 
 bool cmp(const pair<string,int>& p1,const pair<string,int>& p2) {
@@ -85,7 +87,7 @@ void Node::heartBeat(){
         for(it = sentNodes.begin(); it != sentNodes.end(); it++){
             string curNode = *it;
             pair<string,string> p=split(curNode);
-            string res = sendMessage(p.first,p.second,to_string(CheckAlive)+":"+to_string(curNode));
+            string res = sendMessage(p.first,p.second,to_string(CheckAlive)+"::"+curNode);
             if(res == "timeout"){
                 cout << sentNodes.size() << endl;
                 // call submitJob function to submit required job.
@@ -100,6 +102,11 @@ string Node::sendMessage(string ip, string port, string msg){
 	int sockfd, portno, n;
     struct sockaddr_in serv_addr;
     // struct hostent *server;
+    struct timeval tv;
+
+    tv.tv_sec = TIMEOUT;
+    tv.tv_usec = 0;
+
 
     char buffer[256];
     portno = atoi(port.c_str());
@@ -107,18 +114,20 @@ string Node::sendMessage(string ip, string port, string msg){
     if (sockfd < 0) 
         perror("ERROR opening socket");
     
+    setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,sizeof(struct timeval));
+
     bzero((char *) &serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = inet_addr(ip.c_str());
     serv_addr.sin_port = htons(portno);
-    cout << "Connecting to " << stoi(port)%10 << endl;
+    cout << "Connecting to " << ip+":"+port << endl;
     if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0){
         perror("ERROR connecting");
         return "timeout";
     }
     bzero(buffer,256);
     strcpy(buffer,msg.c_str());
-    cout << "Sending message " << msg << " to " << ip << endl;
+    cout << "Sending message " << msg << " to " << ip + ":" + port << endl;
     n = write(sockfd,buffer,strlen(buffer));
     if (n < 0) 
         perror("ERROR writing to socket");
@@ -126,9 +135,13 @@ string Node::sendMessage(string ip, string port, string msg){
     // wait for sometime in this read function. If dont get any read then just break it.
     n = read(sockfd,buffer,255);
     
+    if(errno == EAGAIN || errno == EWOULDBLOCK)
+    {
+        return "timeout";
+    }    
     if (n < 0) 
         perror("ERROR reading from socket");
-    cout << "Got message " << buffer << " from " << ip << endl;
+    cout << "Got message " << buffer << " from " << ip + ":" + port << endl;
     string ret(buffer);
     close(sockfd);
 	return buffer;
@@ -165,9 +178,12 @@ void Node::receiveMessage(){
 	    n = read(newsockfd,buffer,255);
 	    if (n < 0) perror("ERROR reading from socket");
 	    if(buffer[0] == IAmUp+'0'){
-	    	int temp = buffer[2] - '0';
-	    	sentNodes.insert(temp);   
-	    	sprintf(buffer1,"%d:",ReplyAlive);
+            string str(buffer);
+            int idx = str.find("::");
+	    	sentNodes.insert(str.substr(idx+2));   
+	    	sprintf(buffer1,"%d::",ReplyAlive);
+            strcat(buffer1,ip.c_str());
+            strcat(buffer1,(":"+port).c_str());
 	    }
 	    cout << "size of set is " << sentNodes.size() << endl;
 	    n = write(newsockfd,buffer1,256);
@@ -176,6 +192,51 @@ void Node::receiveMessage(){
     
     // close(newsockfd);
     // close(sockfd);
+}
+
+string Node::sendFile(string ip, string port, string fileName, int type){
+    int fileNameSize = fileName.size();
+    int maxsize = MAX - 16 - fileNameSize, lastMessage = 0;
+    int constantMessage;
+
+    if(type == 1)
+        constantMessage = InputSend;
+    else
+        constantMessage = JobSend;
+
+    char *tempBuffer=(char*)malloc(MAX*sizeof(char)),*buffer=(char*)malloc(MAX*sizeof(char)); 
+    FILE *fp=fopen(fileName.c_str(),"r");
+
+    fseek(fp,0,SEEK_END);
+    int f_sz=ftell(fp);
+    rewind(fp);
+
+    int size=0;
+    int nbytes=min(f_sz,maxsize);
+    
+    while((size=fread(tempBuffer,sizeof(char),nbytes,fp))>0){
+        if(size < maxsize)
+            lastMessage = 1;
+
+        sprintf(buffer, "%d::%d:%s:%s", constantMessage, lastMessage, fileName.c_str(), tempBuffer);
+        Node::sendMessage(ip, port, buffer);
+
+        free(buffer);
+        free(tempBuffer);
+        buffer=(char*)malloc(MAX*sizeof(char));
+        tempBuffer=(char*)malloc(MAX*sizeof(char));
+        memset(buffer,0,MAX);
+        memset(tempBuffer,0,MAX);
+
+        f_sz-=size;
+        nbytes=min(f_sz,maxsize);
+    }   
+    fclose(fp);
+    cout<<" file sent\n";
+}
+
+void receiveFile(){
+
 }
 
 string Node::getIp(){
