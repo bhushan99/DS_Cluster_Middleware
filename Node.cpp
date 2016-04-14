@@ -9,11 +9,12 @@ void Node::startUp(){
 	for(int i=0; i<10; i++){
 		
 		if(port != ports[i]){
-			string res = sendMessage(ips[i],ports[i],to_string(IAmUp)+":"+to_string(stoi(port)%10));
+			string res = sendMessage(ips[i],ports[i],to_string(IAmUp)+"::"+ip+":"+port);
 			if(res == "error")
 				continue;
 			else if(res[0] == '2'){
-				sentNodes.insert(i+1);
+                int idx = res.find("::");
+				sentNodes.insert(res.substr(i+2));
 			}
 		}
 	}
@@ -27,7 +28,7 @@ bool cmp(const pair<string,int>& p1,const pair<string,int>& p2) {
     return p1.second<p2.second;
 }
 
-void getDestNodes(vector<pair< <string,int> >& load) {
+void getDestNodes(vector<pair< string,int> >& load) {
     sort(load.begin(),load.end(),cmp);
     int mx=0;
     for(int i=0;i<load.size()-1;i++) mx=max(mx,load[i+1].second-load[i].second);
@@ -85,7 +86,7 @@ string Node::sendMessage(string ip, string port, string msg){
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = inet_addr(ip.c_str());
     serv_addr.sin_port = htons(portno);
-    cout << "Connecting to " << stoi(port)%10 << endl;
+    cout << "Connecting to " << ip+":"+port << endl;
     if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0){
         perror("ERROR connecting");
         return "timeout";
@@ -139,9 +140,12 @@ void Node::receiveMessage(){
 	    n = read(newsockfd,buffer,255);
 	    if (n < 0) perror("ERROR reading from socket");
 	    if(buffer[0] == IAmUp+'0'){
-	    	int temp = buffer[2] - '0';
-	    	sentNodes.insert(temp);   
-	    	sprintf(buffer1,"%d:",ReplyAlive);
+            string str(buffer);
+            int idx = str.find("::");
+	    	sentNodes.insert(str.substr(idx+2));   
+	    	sprintf(buffer1,"%d::",ReplyAlive);
+            strcpy(buffer1,ip.c_str());
+            strcpy(buffer1,(":"+port).c_str());
 	    }
 	    cout << "size of set is " << sentNodes.size() << endl;
 	    n = write(newsockfd,buffer1,256);
@@ -150,6 +154,14 @@ void Node::receiveMessage(){
     
     // close(newsockfd);
     // close(sockfd);
+}
+
+string sendFile(string ip, string port, string fileName){
+
+}
+
+void receiveFile(){
+
 }
 
 string Node::getIp(){

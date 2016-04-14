@@ -14,6 +14,8 @@ public:
 	string getPort();
 	string sendMessage(string ip, string port, string msg);
 	void receiveMessage();
+	string sendFile(string ip, string port, string fileName);
+	void receiveFile();
 
 private:
 	string ip,port,ID; // ID= ip+":"+port, jobID= exFile+":"+ipFile
