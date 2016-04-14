@@ -60,7 +60,7 @@ void Node::heartBeat(){
         for(it = sentNodes.begin(); it != sentNodes.end(); it++){
             string curNode = *it;
             pair<string,string> p=split(curNode);
-            string res = sendMessage(p.first,p.second,to_string(CheckAlive)+":"+to_string(curNode));
+            string res = sendMessage(p.first,p.second,to_string(CheckAlive)+"::"+curNode);
             if(res == "timeout"){
                 cout << sentNodes.size() << endl;
                 // call submitJob function to submit required job.
