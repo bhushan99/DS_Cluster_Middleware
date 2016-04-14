@@ -20,8 +20,9 @@ void Node::startUp(){
 	}
 	cout << "size of set is : " <<  sentNodes.size() << endl;
 
-    heartBeat();
-	listenMessage.join();
+    thread heartBeatMessage (&Node::heartBeat,this);
+    heartBeatMessage.detach();
+	// listenMessage.join();
 }
 
 bool cmp(const pair<string,int>& p1,const pair<string,int>& p2) {
@@ -77,7 +78,7 @@ string Node::sendMessage(string ip, string port, string msg){
     // struct hostent *server;
     struct timeval tv;
 
-    tv.tv_sec = 2;
+    tv.tv_sec = TIMEOUT;
     tv.tv_usec = 0;
 
 
@@ -108,6 +109,10 @@ string Node::sendMessage(string ip, string port, string msg){
     // wait for sometime in this read function. If dont get any read then just break it.
     n = read(sockfd,buffer,255);
     
+    if(errno == EAGAIN || errno == EWOULDBLOCK)
+    {
+        perror("TIMEOUT!!!!!");
+    }    
     if (n < 0) 
         perror("ERROR reading from socket");
     cout << "Got message " << buffer << " from " << ip << endl;
