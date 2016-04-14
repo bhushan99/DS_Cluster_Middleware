@@ -21,6 +21,7 @@ void Node::startUp(){
 }
 
 void Node::submitJob(string execFileName, string ipFileName){
+    
 	cout << "Submit job done!! file names are: \n" << execFileName << "\n" << ipFileName << endl;
 }
 

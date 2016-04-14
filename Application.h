@@ -8,7 +8,6 @@ public:
 	Application();
 	vector<Job> split(Job job, int n);
 	int merge(vector<int> result);
-
 };
 
 #endif

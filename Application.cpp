@@ -9,7 +9,7 @@ vector<Job> Application::split(Job job, int n){
 	is.open(in.c_str());
 	int x;
 	int ct=0;
-	while(is.get(x)) ct++;
+	while(!is.eof()) {is>>x;ct++;}
 	is.close();
 	is.open(in.c_str());
 	int p=(ct+n-1)/n;
@@ -17,11 +17,13 @@ vector<Job> Application::split(Job job, int n){
 	for(int i=1;i<=n;i++) {
 		Job j;
 		j.execFile=ex;
-		j.ipFile=in+string("_part")+to_string(i);
+		stringstream ss;
+		ss << i;
+		j.ipFile=in+string("_part")+ss.str();
 		os.open(j.ipFile.c_str());
 		int k=0;
 		while(k<p && ct) {
-			is.get(x);
+			is>>x;
 			os<<x<<endl;
 			k++; ct--;
 		}
