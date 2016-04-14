@@ -6,25 +6,7 @@
 #include <sys/sem.h>
 #define PARENT 1
 #define CHILD 2
-#define MUTEX 25
 
-void down(int sem_id)
-{
-	struct sembuf sop;
-	sop.sem_num = 0;
-	sop.sem_op = -1;
-	sop.sem_flg = 0;
-	semop(sem_id,&sop,1);
-}
-
-void up(int sem_id)
-{
-	struct sembuf sop;
-	sop.sem_num = 0;
-	sop.sem_op = 1;
-	sop.sem_flg = 0;
-	semop(sem_id,&sop,1);
-}
 
 int main(int argc, char *argv[]){
 	Node node = Node(argv[1],argv[2]);
