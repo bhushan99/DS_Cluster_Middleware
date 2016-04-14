@@ -20,6 +20,7 @@ vector<Job> Application::split(Job job, int n){
 		stringstream ss;
 		ss << i;
 		j.ipFile=in+string("_part")+ss.str();
+		j.ownerId=job.ownerId;
 		os.open(j.ipFile.c_str());
 		int k=0;
 		while(k<p && ct) {
@@ -28,6 +29,7 @@ vector<Job> Application::split(Job job, int n){
 			k++; ct--;
 		}
 		os.close();
+    	j.jobId = job.jobId;
 		ans.push_back(j);
 		if(!ct) break;
 	}

@@ -27,7 +27,7 @@ bool cmp(const pair<string,int>& p1,const pair<string,int>& p2) {
     return p1.second<p2.second;
 }
 
-void getDestNodes(vector<pair< <string,int> >& load) {
+void getDestNodes(vector<pair <string,int> >& load) {
     sort(load.begin(),load.end(),cmp);
     int mx=0;
     for(int i=0;i<load.size()-1;i++) mx=max(mx,load[i+1].second-load[i].second);
@@ -47,8 +47,34 @@ pair<string,string> split(string NodeID) {
 }
 
 void Node::submitJob(string execFileName, string ipFileName){
-    
-	cout << "Submit job done!! file names are: \n" << execFileName << "\n" << ipFileName << endl;
+    MD5 md5;
+    string exf(md5.digestFile(execFileName.c_str()));
+    string ipf(md5.digestFile(ipFileName.c_str()));
+    Job j;
+    j.execFile=exf;
+    j.ipFile=ipf;
+    j.JobId=exf+string(":")+ipf;
+    j.ownerId=this->ID;
+    md5_original[j.JobId]=execFile+string(":")+ipFileName;
+    localQ.push(j);
+    load.erase(load.begin(),load.end());
+
+    // SEND load query to all nodes, receive reply, fill load
+
+    getDestNodes(load);
+    Application app;
+    vector<Job> vj= app.split(j,load.size()+1);
+    for(int i=0;i<vj.size()-1;i++) //send files to nodes in load[i]
+    {
+        sentNodes.insert(load[i].first);
+        nodeToJob[load[i].first].insert(vj[i].JobId);
+        inputMapping[j.JobId].insert(pair<string,int>(load[i].first,i+1));
+    }
+    globalQ.push(vj[vj.size()-1]); //keep self part
+
+	
+
+    cout << "Submit job done!! file names are: \n" << execFileName << "\n" << ipFileName << endl;
 }
 
 void Node::heartBeat(){

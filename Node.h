@@ -20,7 +20,9 @@ private:
 	queue<Job> localQ,globalQ;
 	set<string> sentNodes; // have to send heartbeat message to this nodes.
 	map<string, set<string> > nodeToJob; // mapping for nodeid to set of jobid
-	map<string, pair<string, Job > > inputMapping; // mapping of jobId to pair of nodeId and input (pair of index)
+	map<string, pair<string, int > > inputMapping; // mapping of jobId to pair of nodeId and index
+	map<string,string> md5_original; //md5 Job to original file names in job
+	vector<pair <string,int> > load; // info of #jobs in waiting Q per nodeID
 };
 
 #endif
