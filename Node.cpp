@@ -124,9 +124,9 @@ string Node::sendMessage(string ip, string port, string msg){
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = inet_addr(ip.c_str());
     serv_addr.sin_port = htons(portno);
-    cout << "Connecting to " << ip+":"+port << endl;
+    // cout << "Connecting to " << ip+":"+port << endl;
     if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0){
-        perror("ERROR connecting");
+        // perror("ERROR connecting");
         return "timeout";
     }
     bzero(buffer,256);
@@ -252,6 +252,22 @@ void Node::receiveMessage(){
             fwrite(mes,sizeof(char),sizeof(mes),fp);
             fclose(fp); 
             strcpy(buffer1,string("success").c_str());
+            if(buffer[0] == InputSend + '0' and isLast == 1){
+                globalQ.push(inputJobMapping[fileName]);
+            }
+        }
+        else if(buffer[0] == Mapping + '0'){
+            string str(buffer);
+            int idx = str.find("::");
+            int idx1 = str.find(":",idx+2);
+            int idx2 = str.find(":",idx1+1);
+            int idx3 = str.find(":",idx2+1);
+            struct Job job;
+            job.execFile = str.substr(idx+2, idx1-idx-2);
+            job.ipFile = str.substr(idx1+1,idx2-idx1-1);
+            job.jobId = str.substr(idx2+1, idx3-idx2-1);
+            job.ownerId = str.substr(idx3+1);
+            inputJobMapping[job.ipFile] = job;
         }
 	    cout << "size of set is " << sentNodes.size() << endl;
 	    n = write(newsockfd,buffer1,256);
@@ -305,6 +321,14 @@ string Node::sendFile(string ip, string port, string fileName, int type){
 
 void receiveFile(){
 
+}
+
+void Node::mapFilenametoJobId(string ip, string port, string execFileName, string ipFileName, string jobId, string ownerId)
+{
+    char* message = (char*)malloc(MAX*sizeof(char));
+    sprintf(message, "%d::%s:%s:%s:%s", Mapping, execFileName.c_str(), ipFileName.c_str(), jobId.c_str(), ownerId.c_str());
+    string ret = sendMessage(ip, port, message);
+    free(message);
 }
 
 string Node::getIp(){
