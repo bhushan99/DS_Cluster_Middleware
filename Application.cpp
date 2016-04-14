@@ -19,7 +19,7 @@ vector<Job> Application::split(Job job, int n){
 		j.execFile=ex;
 		stringstream ss;
 		ss << i;
-		j.ipFile=in+string("_part")+ss.str();
+		j.ipFile=string("part")+ss.str()+string("_")+in;
 		j.ownerId=job.ownerId;
 		os.open(j.ipFile.c_str());
 		int k=0;

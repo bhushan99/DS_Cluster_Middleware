@@ -72,7 +72,7 @@ void Node::submitJob(string execFileName, string ipFileName){
     for(int i=0;i<vj.size()-1;i++) //send files to nodes in load[i]
     {
         sentNodes.insert(load[i].first);
-        nodeToJob[load[i].first].insert(vj[i]);
+        nodeToJob[load[i].first].push_back(vj[i]);
         inputMapping[j.jobId].insert(pair<string,int>(load[i].first,i+1));
     }
     globalQ.push_back(vj[vj.size()-1]); //keep self part
@@ -151,7 +151,7 @@ string Node::sendMessage(string ip, string port, string msg){
 	return buffer;
 }
 
-void receive_IamUP(string newnodeid) {
+void Node::receive_IamUP(string newnodeid) {
     deque<Job>::iterator it;
     for(it=globalQ.begin();it!=globalQ.end();) {
         Job j=*it;
@@ -169,10 +169,10 @@ void receive_IamUP(string newnodeid) {
         for(int i=0;i<vj.size()-1;i++) //send files to nodes in newnodeid
         {
             sentNodes.insert(newnodeid);
-            nodeToJob[newnodeid].insert(vj[i]);
+            nodeToJob[newnodeid].push_back(vj[i]);
             inputMapping[j.jobId].insert(pair<string,int>(newnodeid,i+1));
         }
-        parent[vj[vj.size()-1].jobId]=it->jobId;
+        parent[newjid]=it->jobId;
         globalQ.push_back(vj[vj.size()-1]);
         deque<Job>::iterator it1=it;
         it++;
@@ -180,8 +180,8 @@ void receive_IamUP(string newnodeid) {
     }
 }
 
-void nodeFail(string failnodeid) {
-    set<Job>::iterator it;
+void Node::nodeFail(string failnodeid) {
+    vector<Job>::iterator it;
     if(nodeToJob.find(failnodeid)==nodeToJob.end()) return;
     for(it=nodeToJob[failnodeid].begin();it!=nodeToJob[failnodeid].end();) {
         Job j=*it;
@@ -197,6 +197,7 @@ void nodeFail(string failnodeid) {
         it++;
     }
     nodeToJob.erase(failnodeid);
+    sentNodes.erase(failnodeid);
     return;
 }
 
@@ -253,7 +254,7 @@ void Node::receiveMessage(){
             fclose(fp); 
             strcpy(buffer1,string("success").c_str());
             if(buffer[0] == InputSend + '0' and isLast == 1){
-                globalQ.push(inputJobMapping[fileName]);
+                globalQ.push_back(inputJobMapping[fileName]);
             }
         }
         else if(buffer[0] == Mapping + '0'){
