@@ -100,7 +100,7 @@ string Node::sendMessage(string ip, string port, string msg){
     }
     bzero(buffer,256);
     strcpy(buffer,msg.c_str());
-    cout << "Sending message " << msg << " to " << ip << endl;
+    cout << "Sending message " << msg << " to " << ip + ":" + port << endl;
     n = write(sockfd,buffer,strlen(buffer));
     if (n < 0) 
         perror("ERROR writing to socket");
@@ -110,7 +110,7 @@ string Node::sendMessage(string ip, string port, string msg){
     
     if (n < 0) 
         perror("ERROR reading from socket");
-    cout << "Got message " << buffer << " from " << ip << endl;
+    cout << "Got message " << buffer << " from " << ip + ":" + port << endl;
     string ret(buffer);
     close(sockfd);
 	return buffer;
@@ -151,8 +151,8 @@ void Node::receiveMessage(){
             int idx = str.find("::");
 	    	sentNodes.insert(str.substr(idx+2));   
 	    	sprintf(buffer1,"%d::",ReplyAlive);
-            strcpy(buffer1,ip.c_str());
-            strcpy(buffer1,(":"+port).c_str());
+            strcat(buffer1,ip.c_str());
+            strcat(buffer1,(":"+port).c_str());
 	    }
 	    cout << "size of set is " << sentNodes.size() << endl;
 	    n = write(newsockfd,buffer1,256);
