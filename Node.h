@@ -28,6 +28,7 @@ private:
 	map<string, set<pair<string, int> > > inputMapping; // mapping of jobId to pair of nodeId and index
 	map<string,string> md5_original; //md5 Job to original file names in job
 	vector<pair <string,int> > load; // info of #jobs in waiting Q per nodeID
+	map<string, Job> inputJobMapping; // mapping of input file to Job
 };
 
 #endif

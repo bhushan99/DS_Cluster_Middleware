@@ -29,6 +29,7 @@ using namespace std;
 #define IAmUp 5
 #define JobSend 6
 #define InputSend 7
+#define Mapping 8
 #define HeartBeatTime 10
 #define TIMEOUT 1
 #define MUTEX 25
