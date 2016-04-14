@@ -26,7 +26,8 @@ using namespace std;
 #define JobAssign 3
 #define Result 4
 #define IAmUp 5
-#define JOBSEND 6
+#define JobSend 6
+#define InputSend 7
 #define HeartBeatTime 10
 #define TIMEOUT 1
 #define MUTEX 25

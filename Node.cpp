@@ -171,12 +171,12 @@ void Node::receiveMessage(){
 string Node::sendFile(string ip, string port, string fileName, int type){
     int fileNameSize = fileName.size();
     int maxsize = MAX - 16 - fileNameSize, lastMessage = 0;
-    string constantMessage;
+    int constantMessage;
 
     if(type == 1)
-        constantMessage = "INPUTSEND";
+        constantMessage = InputSend;
     else
-        constantMessage = "JOBSEND";
+        constantMessage = JobSend;
 
     char *tempBuffer=(char*)malloc(MAX*sizeof(char)),*buffer=(char*)malloc(MAX*sizeof(char)); 
     FILE *fp=fopen(fileName.c_str(),"r");
@@ -192,7 +192,7 @@ string Node::sendFile(string ip, string port, string fileName, int type){
         if(size < maxsize)
             lastMessage = 1;
 
-        sprintf(buffer, "%s::%d:%s:%s", constantMessage.c_str(), lastMessage, fileName.c_str(), tempBuffer);
+        sprintf(buffer, "%d::%d:%s:%s", constantMessage, lastMessage, fileName.c_str(), tempBuffer);
         Node::sendMessage(ip, port, buffer);
 
         free(buffer);
