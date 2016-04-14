@@ -26,9 +26,11 @@ using namespace std;
 #define JobAssign 3
 #define Result 4
 #define IAmUp 5
+#define JOBSEND 6
 #define HeartBeatTime 10
-
+#define TIMEOUT 1
 #define MUTEX 25
+#define MAX 256
 
 void down(int sem_id)
 {

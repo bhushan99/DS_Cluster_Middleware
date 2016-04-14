@@ -111,7 +111,7 @@ string Node::sendMessage(string ip, string port, string msg){
     
     if(errno == EAGAIN || errno == EWOULDBLOCK)
     {
-        perror("TIMEOUT!!!!!");
+        return "timeout";
     }    
     if (n < 0) 
         perror("ERROR reading from socket");
@@ -168,8 +168,45 @@ void Node::receiveMessage(){
     // close(sockfd);
 }
 
-string sendFile(string ip, string port, string fileName){
+string Node::sendFile(string ip, string port, string fileName, int type){
+    int fileNameSize = fileName.size();
+    int maxsize = MAX - 16 - fileNameSize, lastMessage = 0;
+    string constantMessage;
 
+    if(type == 1)
+        constantMessage = "INPUTSEND";
+    else
+        constantMessage = "JOBSEND";
+
+    char *tempBuffer=(char*)malloc(MAX*sizeof(char)),*buffer=(char*)malloc(MAX*sizeof(char)); 
+    FILE *fp=fopen(fileName.c_str(),"r");
+
+    fseek(fp,0,SEEK_END);
+    int f_sz=ftell(fp);
+    rewind(fp);
+
+    int size=0;
+    int nbytes=min(f_sz,maxsize);
+    
+    while((size=fread(tempBuffer,sizeof(char),nbytes,fp))>0){
+        if(size < maxsize)
+            lastMessage = 1;
+
+        sprintf(buffer, "%s::%d:%s:%s", constantMessage.c_str(), lastMessage, fileName.c_str(), tempBuffer);
+        Node::sendMessage(ip, port, buffer);
+
+        free(buffer);
+        free(tempBuffer);
+        buffer=(char*)malloc(MAX*sizeof(char));
+        tempBuffer=(char*)malloc(MAX*sizeof(char));
+        memset(buffer,0,MAX);
+        memset(tempBuffer,0,MAX);
+
+        f_sz-=size;
+        nbytes=min(f_sz,maxsize);
+    }   
+    fclose(fp);
+    cout<<" file sent\n";
 }
 
 void receiveFile(){

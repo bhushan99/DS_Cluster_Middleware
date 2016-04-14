@@ -14,7 +14,7 @@ public:
 	string getPort();
 	string sendMessage(string ip, string port, string msg);
 	void receiveMessage();
-	string sendFile(string ip, string port, string fileName);
+	string sendFile(string ip, string port, string fileName, int type);
 	void receiveFile();
 
 private:
