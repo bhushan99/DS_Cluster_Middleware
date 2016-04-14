@@ -61,7 +61,7 @@ void Node::submitJob(string execFileName, string ipFileName){
     j.jobId=exf+string(":")+ipf;
     j.ownerId=this->ID;
     md5_original[j.jobId]=execFileName+string(":")+ipFileName;
-    localQ.push(j);
+    localQ.push_back(j);
     load.erase(load.begin(),load.end());
 
     // SEND load query to all nodes, receive reply, fill load
@@ -72,10 +72,10 @@ void Node::submitJob(string execFileName, string ipFileName){
     for(int i=0;i<vj.size()-1;i++) //send files to nodes in load[i]
     {
         sentNodes.insert(load[i].first);
-        nodeToJob[load[i].first].insert(vj[i].jobId);
+        nodeToJob[load[i].first].insert(vj[i]);
         inputMapping[j.jobId].insert(pair<string,int>(load[i].first,i+1));
     }
-    globalQ.push(vj[vj.size()-1]); //keep self part
+    globalQ.push_back(vj[vj.size()-1]); //keep self part
 
 	
 
@@ -151,7 +151,38 @@ string Node::sendMessage(string ip, string port, string msg){
 	return buffer;
 }
 
+void receive_IamUP(string newnodeid) {
+    deque<Job>::iterator it;
+    for(it=globalQ.begin();it!=globalQ.end();) {
+        Job j=*it;
+        if(j.ownerId!=ID) {it++;continue;}
+        char buf[256];
+        MD5 md5;
+        strcpy(buf,j.execFile.c_str());
+        string exf(md5.digestFile(buf));
+        strcpy(buf,j.ipFile.c_str());
+        string ipf(md5.digestFile(buf));
+        string newjid=exf+string(":")+ipf;
+        j.jobId=newjid;
+        Application app;
+        vector<Job> vj= app.split(j,2);
+        for(int i=0;i<vj.size()-1;i++) //send files to nodes in newnodeid
+        {
+            sentNodes.insert(newnodeid);
+            nodeToJob[newnodeid].insert(vj[i]);
+            inputMapping[j.jobId].insert(pair<string,int>(newnodeid,i+1));
+        }
+        parent[vj[vj.size()-1].jobId]=it->jobId;
+        globalQ.push_back(vj[vj.size()-1]);
+        deque<Job>::iterator it1=it;
+        it++;
+        globalQ.erase(it1);
+    }
+}
 
+void nodeFail(string failnodeid) {
+    
+}
 
 void Node::receiveMessage(){
 	int sockfd, newsockfd, portno;
@@ -274,6 +305,14 @@ string Node::sendFile(string ip, string port, string fileName, int type){
 
 void receiveFile(){
 
+}
+
+void Node::mapFilenametoJobId(string ip, string port, string execFileName, string ipFileName, string jobId, string ownerId)
+{
+    char* message = (char*)malloc(MAX*sizeof(char));
+    sprintf(message, "%d::%s:%s:%s:%s", Mapping, execFileName.c_str(), ipFileName.c_str(), jobId.c_str(), ownerId.c_str());
+    string ret = sendMessage(ip, port, message);
+    free(message);
 }
 
 string Node::getIp(){
