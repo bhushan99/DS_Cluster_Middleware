@@ -42,7 +42,7 @@ void getDestNodes(vector<pair <string,int> >& load) {
     }
 } 
 
-pair<string,string> split(string NodeID) {
+pair<string,string> split_(string NodeID) {
     string a="";int i;
     for(i=0;NodeID[i]!=':';i++) a+=NodeID[i];
     return pair<string,string>(a,NodeID.substr(i+1));
@@ -50,14 +50,17 @@ pair<string,string> split(string NodeID) {
 
 void Node::submitJob(string execFileName, string ipFileName){
     MD5 md5;
-    string exf(md5.digestFile(execFileName.c_str()));
-    string ipf(md5.digestFile(ipFileName.c_str()));
+    char buf[256];
+    strcpy(buf,execFileName.c_str());
+    string exf(md5.digestFile(buf));
+    strcpy(buf,ipFileName.c_str());
+    string ipf(md5.digestFile(buf));
     Job j;
     j.execFile=exf;
     j.ipFile=ipf;
-    j.JobId=exf+string(":")+ipf;
+    j.jobId=exf+string(":")+ipf;
     j.ownerId=this->ID;
-    md5_original[j.JobId]=execFile+string(":")+ipFileName;
+    md5_original[j.jobId]=execFileName+string(":")+ipFileName;
     localQ.push(j);
     load.erase(load.begin(),load.end());
 
@@ -69,8 +72,8 @@ void Node::submitJob(string execFileName, string ipFileName){
     for(int i=0;i<vj.size()-1;i++) //send files to nodes in load[i]
     {
         sentNodes.insert(load[i].first);
-        nodeToJob[load[i].first].insert(vj[i].JobId);
-        inputMapping[j.JobId].insert(pair<string,int>(load[i].first,i+1));
+        nodeToJob[load[i].first].insert(vj[i].jobId);
+        inputMapping[j.jobId].insert(pair<string,int>(load[i].first,i+1));
     }
     globalQ.push(vj[vj.size()-1]); //keep self part
 
@@ -86,7 +89,7 @@ void Node::heartBeat(){
         set<string>::iterator it;
         for(it = sentNodes.begin(); it != sentNodes.end(); it++){
             string curNode = *it;
-            pair<string,string> p=split(curNode);
+            pair<string,string> p=split_(curNode);
             string res = sendMessage(p.first,p.second,to_string(CheckAlive)+"::"+curNode);
             if(res == "timeout"){
                 cout << curNode << " is not alive!!" << endl;
@@ -201,6 +204,7 @@ void Node::receiveMessage(){
             FILE *fp = fopen(fileName.c_str(),"a");
             fwrite(mes,sizeof(char),sizeof(mes),fp);
             fclose(fp); 
+            strcpy(buffer1,string("success").c_str());
         }
 	    cout << "size of set is " << sentNodes.size() << endl;
 	    n = write(newsockfd,buffer1,256);
@@ -236,7 +240,7 @@ string Node::sendFile(string ip, string port, string fileName, int type){
             lastMessage = 1;
 
         sprintf(buffer, "%d::%d:%s:%s", constantMessage, lastMessage, fileName.c_str(), tempBuffer);
-        Node::sendMessage(ip, port, buffer);
+        string ret = sendMessage(ip, port, buffer);
 
         free(buffer);
         free(tempBuffer);

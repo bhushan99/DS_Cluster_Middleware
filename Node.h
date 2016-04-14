@@ -1,6 +1,7 @@
 #ifndef NODE_H
 #define NODE_H
 #include "Structure.h"
+#include "Application.cpp"
 #define MAX 256
 #define BACKLOG 10
 
@@ -24,7 +25,7 @@ private:
 	map<string, set<string> > nodeToJob; // mapping for nodeid to set of jobid
 	map<string, FILE *> filePointer;
 	map<string, FILE *> inputPointer;
-	map<string, pair<string, int > > inputMapping; // mapping of jobId to pair of nodeId and index
+	map<string, set<pair<string, int> > > inputMapping; // mapping of jobId to pair of nodeId and index
 	map<string,string> md5_original; //md5 Job to original file names in job
 	vector<pair <string,int> > load; // info of #jobs in waiting Q per nodeID
 };
