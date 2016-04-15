@@ -19,11 +19,12 @@ public:
 	void sendExecFile(string ip, string port, string fileName);
 	// void receiveFile();
 	void receiveExecFile();
-	string mapFilenametoJobId(string ip, string port, string execFileName, string ipFileName, string jobId, string ownerId);
+	void mapFilenametoJobId(string ip, string port, string execFileName, string ipFileName, string jobId, string ownerId);
 	void receive_IamUP(string newnodeid);
 	void nodeFail(string failnodeid);
 	deque<Job> localQ,globalQ;
 	void receive_result(string nodeid,string jobid,string opfile);
+	void executeJob();
 private:
 	string ip,port,ID; // ID= ip+":"+port, jobID= exFile+":"+ipFile
 	

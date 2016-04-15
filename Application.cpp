@@ -3,12 +3,6 @@
 
 Application::Application(){ }
 
-pair<string,string> splitcolon(string NodeID) {
-    string a="";int i;
-    for(i=0;NodeID[i]!=':';i++) a+=NodeID[i];
-    return pair<string,string>(a,NodeID.substr(i+1));
-}
-
 vector<Job> Application::split(Job job, int n){
 	string in=job.ipFile, ex=job.execFile;
 	MD5 md5;

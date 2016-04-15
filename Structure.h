@@ -30,9 +30,11 @@ using namespace std;
 #define JobSend 6
 #define InputSend 7
 #define Mapping 8
-#define HeartBeatTime 10
+#define Query 9
+#define HeartBeatTime 20
 #define TIMEOUT 1
 #define MUTEX 25
+#define MACHINES 10
 
 #define MAX 256
 #define MAX1 10
@@ -44,6 +46,12 @@ inline string filerename(string from) {
     string exf(md5.digestFile(buf));
     rename(from.c_str(),exf.c_str());
     return exf;
+}
+
+inline pair<string,string> split_(string NodeID) {
+    string a="";int i;
+    for(i=0;NodeID[i]!=':';i++) a+=NodeID[i];
+    return pair<string,string>(a,NodeID.substr(i+1));
 }
 
 void down(int sem_id)
