@@ -59,8 +59,8 @@ void Node::submitJob(string execFileName, string ipFileName){
     strcpy(buf,ipFileName.c_str());
     string ipf(md5.digestFile(buf));
     Job j;
-    j.execFile=exf;
-    j.ipFile=ipf;
+    j.execFile=execFileName;
+    j.ipFile=ipFileName;
     j.jobId=exf+string(":")+ipf;
     j.ownerId=this->ID;
     md5_original[j.jobId]=execFileName+string(":")+ipFileName;
@@ -79,7 +79,7 @@ void Node::submitJob(string execFileName, string ipFileName){
         inputMapping[j.jobId].insert(pair<string,int>(load[i].first,i+1));
     }
     globalQ.push_back(vj[vj.size()-1]); //keep self part
-
+    inputMapping[j.jobId].insert(pair<string,int>(ID,vj.size()));
 	
 
     cout << "Submit job done!! file names are: \n" << execFileName << "\n" << ipFileName << endl;
@@ -159,6 +159,7 @@ string Node::sendMessage(string ip, string port, string msg){
 
 void Node::receive_IamUP(string newnodeid) {
     deque<Job>::iterator it;
+    int ind=0;
     for(it=globalQ.begin();it!=globalQ.end();) {
         Job j=*it;
         if(j.ownerId!=ID) {it++;continue;}
@@ -178,11 +179,13 @@ void Node::receive_IamUP(string newnodeid) {
             nodeToJob[newnodeid].push_back(vj[i]);
             inputMapping[j.jobId].insert(pair<string,int>(newnodeid,i+1));
         }
-        parent[newjid]=it->jobId;
-        globalQ.push_back(vj[vj.size()-1]);
-        deque<Job>::iterator it1=it;
-        it++;
-        globalQ.erase(it1);
+        set<pair<string,int> >::iterator z=inputMapping[it->jobId].begin();
+        while(z->first!=ID) z++;
+        parent[newjid]=pair<string,int>(it->jobId,z->second);
+        //inputMapping[it->jobId].erase(z);
+        inputMapping[newjid].insert(pair<string,int>(ID,vj.size()));
+        globalQ[ind]=vj[vj.size()-1];
+        it++;ind++;
     }
 }
 
@@ -198,13 +201,51 @@ void Node::nodeFail(string failnodeid) {
         strcpy(buf,j.ipFile.c_str());
         string ipf(md5.digestFile(buf));
         string newjid=exf+string(":")+ipf;
-        parent[newjid]=it->jobId;
+        set<pair<string,int> >::iterator z=inputMapping[it->jobId].begin();
+        while(z->first!=failnodeid) z++;
+        parent[newjid]=pair<string,int>(it->jobId,z->second);
+        //inputMapping[it->jobId].erase(z);
         submitJob(it->execFile,it->ipFile);
         it++;
     }
     nodeToJob.erase(failnodeid);
     sentNodes.erase(failnodeid);
     return;
+}
+
+void Node::receive_result(string nodeid,string jobid,string opfile) {
+    opfile=filerename(opfile);
+    set<pair<string,int> >::iterator it=inputMapping[jobid].begin();
+    while(it!=inputMapping[jobid].end() && it->first!=nodeid) it++;
+    if(it==inputMapping[jobid].end()) return;
+    result[jobid].insert(pair<int,string>(it->second,opfile));
+    while(result[jobid].size()==inputMapping[jobid].size()) {
+        Application app;
+        string of=app.merge(result[jobid]);
+        result.erase(jobid);
+        inputMapping.erase(jobid);
+        of=filerename(of);
+        if(parent.find(jobid)!=parent.end()) {
+            string j1=parent[jobid].first;
+            result[j1].insert(pair<int,string>(parent[jobid].second,of));
+            parent.erase(jobid);
+            jobid=j1;
+        } else {
+            cout<< "Output of "<<md5_original[jobid]<<" stored in "<< of<< endl;
+            md5_original.erase(jobid);
+            break;
+        }
+    }
+    
+    if(nodeToJob[nodeid].size()==1) {
+        nodeToJob.erase(nodeid);
+        sentNodes.erase(nodeid); 
+    } else {
+        vector<Job>::iterator it=nodeToJob[nodeid].begin();
+        while(it->jobId!=jobid) it++;
+        nodeToJob[nodeid].erase(it);
+    }
+    return; 
 }
 
 void Node::receiveMessage(){

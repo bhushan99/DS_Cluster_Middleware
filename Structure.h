@@ -37,6 +37,14 @@ using namespace std;
 #define MAX 256
 #define MAX1 10
 
+inline string filerename(string from) {
+    MD5 md5;
+    char buf[256];
+    strcpy(buf,from.c_str());
+    string exf(md5.digestFile(buf));
+    rename(from.c_str(),exf.c_str());
+    return exf;
+}
 
 void down(int sem_id)
 {

@@ -7,7 +7,7 @@ class Application{
 public:
 	Application();
 	vector<Job> split(Job job, int n);
-	int merge(vector<int> result);
+	string merge(set<pair<int,string> > result);
 };
 
 #endif
