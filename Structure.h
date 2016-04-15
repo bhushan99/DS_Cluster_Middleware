@@ -50,7 +50,7 @@ inline string filerename(string from) {
 
 inline pair<string,string> split_(string NodeID) {
     string a="";int i;
-    for(i=0;NodeID[i]!=':';i++) a+=NodeID[i];
+    for(i=0;NodeID[i]!='<';i++) a+=NodeID[i];
     return pair<string,string>(a,NodeID.substr(i+1));
 }
 

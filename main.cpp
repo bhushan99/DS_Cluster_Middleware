@@ -73,5 +73,6 @@ int main(int argc, char *argv[]){
 		}
 		up(mutex);
 	}
+	
 	return 0;
 }

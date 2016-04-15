@@ -1,6 +1,6 @@
 #include "Node.h"
 #include <fstream>
-Node::Node(string ip, string port):ip(ip),port(port) { ID=ip+string(":")+port; }
+Node::Node(string ip, string port):ip(ip),port(port) { ID=ip+string("<")+port; }
 
 void Node::startUp(){
 	thread listenMessage (&Node::receiveMessage,this);
@@ -9,13 +9,13 @@ void Node::startUp(){
     thread listenFile(&Node::receiveExecFile,this);
     listenFile.detach();
 
-    thread executeJob(&Node::executeJob, this);
-    executeJob.detach();
+    thread executeJob1(&Node::executeJob, this);
+    executeJob1.detach();
     	
 	for(int i=0; i<10; i++){
 		
 		if(port != ports[i]){
-			string res = sendMessage(ips[i],ports[i],to_string(IAmUp)+"::"+ip+":"+port);
+			string res = sendMessage(ips[i],ports[i],to_string(IAmUp)+"::"+ip+"<"+port);
 			if(res == "error")
 				continue;
 			else if(res[0] == '2'){
@@ -26,32 +26,44 @@ void Node::startUp(){
 	}
 	cout << "Total number of nodes in sentNodes : " <<  sentNodes.size() << endl;
 
-    thread heartBeatMessage (&Node::heartBeat,this);
-    heartBeatMessage.detach();
+    // thread heartBeatMessage (&Node::heartBeat,this);
+    // heartBeatMessage.detach();
 	
 }
 
 void Node::executeJob(){
     while(1){
+        sleep(5);
+        
         if(globalQ.empty())
             continue;
+        cout << "thread working fine " << globalQ.size() << endl;
         Job job = globalQ.front();
         globalQ.pop_front();
+        cout << "execFile name is: " << job.execFile << endl;
+        cout << "ipFile name is: " << job.ipFile << endl;
+        cout << "jobId is: " << job.jobId << endl;
+        cout << "ownerId is: " << job.ownerId << endl;
         cout << "Job is being executed" << endl;
-        char* arglist[4];
-        arglist[0] = (char *)malloc(7*sizeof(char)); strcpy(arglist[0],job.execFile.c_str());
-        arglist[1] = (char *)malloc(6*sizeof(char)); strcpy(arglist[1],job.ipFile.c_str());
-        arglist[2] = (char *)malloc(7*sizeof(char)); strcpy(arglist[2],(string("out_")+job.ipFile).c_str());
+        char *arglist[4];
+        arglist[0] = (char *)malloc(256*sizeof(char)); strcpy(arglist[0],job.execFile.c_str());
+        arglist[1] = (char *)malloc(256*sizeof(char)); strcpy(arglist[1],job.ipFile.c_str());
+        arglist[2] = (char *)malloc(256*sizeof(char)); strcpy(arglist[2],(string("out_")+job.ipFile).c_str());
         arglist[3] = NULL;
         char buf[256];
+        cout << "testing" << endl;
         sprintf(buf,"%s/arrsum",get_current_dir_name());
         int pid, status;
         if((pid = fork()) == 0){
             execvp(buf,arglist);
         }
+        free(arglist[0]);
+        free(arglist[1]);
+        free(arglist[2]);
         waitpid(pid,&status,0);
         cout << "Job is finished" << endl;
         pair<string, string> addr = split_(job.ownerId);
+        cout<<job.ipFile.size()<<endl;
         sendExecFile(addr.first, addr.second, string("out_")+job.ipFile);
 
     }
@@ -62,6 +74,7 @@ bool cmp(const pair<string,int>& p1,const pair<string,int>& p2) {
 }
 
 void getDestNodes(vector<pair <string,int> >& load) {
+
     sort(load.begin(),load.end(),cmp);
     int mx=0;
     for(int i=0;i<load.size()-1;i++) mx=max(mx,load[i+1].second-load[i].second);
@@ -75,6 +88,7 @@ void getDestNodes(vector<pair <string,int> >& load) {
 } 
 
 void Node::submitJob(string execFileName, string ipFileName){
+    cout << execFileName << " " << ipFileName << endl;
     MD5 md5;
     char buf[256];
     strcpy(buf,execFileName.c_str());
@@ -84,29 +98,30 @@ void Node::submitJob(string execFileName, string ipFileName){
     Job j;
     j.execFile=execFileName;
     j.ipFile=ipFileName;
-    j.jobId=exf+string(":")+ipf;
+    j.jobId=exf+string("<")+ipf;
     j.ownerId=this->ID;
-    md5_original[j.jobId]=execFileName+string(":")+ipFileName;
+    md5_original[j.jobId]=execFileName+string("<")+ipFileName;
     localQ.push_back(j);
     load.erase(load.begin(),load.end());
-
     // SEND load query to all nodes, receive reply, fill load
     for(int i=0; i<MACHINES; i++){
-        if(ID == ips[i]+":"+ports[i])
+        if(ID == ips[i]+"<"+ports[i])
             continue;
-        string out = sendMessage(ips[i],ports[i],to_string(Query)+"::"+ip+":"+port);
+        string out = sendMessage(ips[i],ports[i],to_string(Query)+"::"+ip+"<"+port);
         if(out == "timeout" or out == "disconnect")
             continue;
         int temp = stoi(out);
-        load.push_back(make_pair(ips[i]+":"+ports[i],temp));
+        load.push_back(make_pair(ips[i]+"<"+ports[i],temp));
     }
-    getDestNodes(load);
+    // getDestNodes(load);
+    // cout << "I am here" << endl;
     Application app;
     vector<Job> vj= app.split(j,load.size()+1);
+    // cout << "size of vector job is " << vj.size() << endl;
     for(int i=0;i<vj.size()-1;i++) //send files to nodes in load[i]
     {
-        string sentip = load[i].first.substr(0,load[i].first.find(":"));
-        string sentport = load[i].first.substr(load[i].first.find(":")+1);
+        string sentip = load[i].first.substr(0,load[i].first.find("<"));
+        string sentport = load[i].first.substr(load[i].first.find("<")+1);
         mapFilenametoJobId(sentip,sentport,vj[i].execFile,vj[i].ipFile,vj[i].jobId,vj[i].ownerId);
         sendExecFile(sentip, sentport, vj[i].ipFile);
         sendExecFile(sentip, sentport, vj[i].execFile);
@@ -115,6 +130,7 @@ void Node::submitJob(string execFileName, string ipFileName){
         inputMapping[j.jobId].insert(pair<string,int>(load[i].first,i+1));
     }
     globalQ.push_back(vj[vj.size()-1]); //keep self part
+    cout << "size of globalQ is " << globalQ.size() << endl;
     inputMapping[j.jobId].insert(pair<string,int>(ID,vj.size()));
 	
 
@@ -171,7 +187,7 @@ string Node::sendMessage(string ip, string port, string msg){
     }
     bzero(buffer,256);
     strcpy(buffer,msg.c_str());
-    cout << "Sending message " << msg << " to " << ip + ":" + port << endl;
+    cout << "Sending message " << msg << " to " << ip + "<" + port << endl;
     n = write(sockfd,buffer,strlen(buffer));
     if (n < 0) 
         perror("ERROR writing to socket");
@@ -185,7 +201,7 @@ string Node::sendMessage(string ip, string port, string msg){
     }    
     if (n < 0) 
         perror("ERROR reading from socket");
-    cout << "Got message " << buffer << " from " << ip + ":" + port << endl;
+    cout << "Got message " << buffer << " from " << ip + "<" + port << endl;
     string ret(buffer);
     close(sockfd);
 	return buffer;
@@ -206,14 +222,14 @@ void Node::receive_IamUP(string newnodeid) {
         string exf(md5.digestFile(buf));
         strcpy(buf,j.ipFile.c_str());
         string ipf(md5.digestFile(buf));
-        string newjid=exf+string(":")+ipf;
+        string newjid=exf+string("<")+ipf;
         j.jobId=newjid;
         Application app;
         vector<Job> vj= app.split(j,2);
         for(int i=0;i<vj.size()-1;i++) //send files to nodes in newnodeid
         {
-            string sentip = newnodeid.substr(0,newnodeid.find(":"));
-            string sentport = newnodeid.substr(newnodeid.find(":")+1);
+            string sentip = newnodeid.substr(0,newnodeid.find("<"));
+            string sentport = newnodeid.substr(newnodeid.find("<")+1);
             mapFilenametoJobId(sentip,sentport,vj[i].execFile,vj[i].ipFile,vj[i].jobId,vj[i].ownerId);
             sendExecFile(sentip, sentport, vj[i].ipFile);
             sendExecFile(sentip, sentport, vj[i].execFile);
@@ -243,7 +259,7 @@ void Node::nodeFail(string failnodeid) {
         string exf(md5.digestFile(buf));
         strcpy(buf,j.ipFile.c_str());
         string ipf(md5.digestFile(buf));
-        string newjid=exf+string(":")+ipf;
+        string newjid=exf+string("<")+ipf;
         set<pair<string,int> >::iterator z=inputMapping[it->jobId].begin();
         while(z->first!=failnodeid) z++;
         parent[newjid]=pair<string,int>(it->jobId,z->second);
@@ -328,7 +344,7 @@ void Node::receiveMessage(){
 	    	sentNodes.insert(str.substr(idx+2));   
 	    	sprintf(buffer1,"%d::",ReplyAlive);
             strcat(buffer1,ip.c_str());
-            strcat(buffer1,(":"+port).c_str());
+            strcat(buffer1,("<"+port).c_str());
 	    }
         else if(buffer[0] == Mapping+'0'){
             string str(buffer);

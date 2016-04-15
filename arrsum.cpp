@@ -10,7 +10,7 @@ int main(int argc, char const *argv[])
 	int ans=0,x;
 	while(is>>x) {
 		ans+=x;
-		cout<<x<<endl;
+		cout<<"Reading Input "<<x<<endl;
 		sleep(1);
 	}
 	is.close();
