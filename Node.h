@@ -34,6 +34,8 @@ private:
 	map<string, Job> inputJobMapping; // mapping of input file to Job
 	map<string,pair<string,int> > parent; // point to parent job on same node
 	map<string,set<pair<int,string> > > result; // jobid -> index,o/p filename to store result files
+	int msentnodes,mnodetojob,minputmapping,mmd5_original,
+	mload;
 };
 
 #endif

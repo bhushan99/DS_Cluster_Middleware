@@ -225,7 +225,8 @@ void Node::receive_result(string nodeid,string jobid,string opfile) {
             parent.erase(jobid);
             jobid=j1;
         } else {
-            cout<< "Output is stored in "<< of<< endl;
+            cout<< "Output of "<<md5_original[jobid]<<" stored in "<< of<< endl;
+            md5_original.erase(jobid);
             break;
         }
     }
