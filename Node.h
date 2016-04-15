@@ -32,6 +32,7 @@ private:
 	vector<pair <string,int> > load; // info of #jobs in waiting Q per nodeID
 	map<string, Job> inputJobMapping; // mapping of input file to Job
 	map<string,string> parent; // point to parent job on same node
+	map<string,set<pair<int,string> > > result; // jobid -> index,o/p filename to store result files
 };
 
 #endif

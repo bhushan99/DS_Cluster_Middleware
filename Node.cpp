@@ -29,6 +29,15 @@ bool cmp(const pair<string,int>& p1,const pair<string,int>& p2) {
     return p1.second<p2.second;
 }
 
+inline string filerename(string from) {
+    MD5 md5;
+    char buf[256];
+    strcpy(buf,from.c_str());
+    string exf(md5.digestFile(buf));
+    rename(from.c_str(),exf.c_str());
+    return exf;
+}
+
 void getDestNodes(vector<pair <string,int> >& load) {
     sort(load.begin(),load.end(),cmp);
     int mx=0;
@@ -56,8 +65,8 @@ void Node::submitJob(string execFileName, string ipFileName){
     strcpy(buf,ipFileName.c_str());
     string ipf(md5.digestFile(buf));
     Job j;
-    j.execFile=exf;
-    j.ipFile=ipf;
+    j.execFile=execFileName;
+    j.ipFile=ipFileName;
     j.jobId=exf+string(":")+ipf;
     j.ownerId=this->ID;
     md5_original[j.jobId]=execFileName+string(":")+ipFileName;
@@ -76,7 +85,7 @@ void Node::submitJob(string execFileName, string ipFileName){
         inputMapping[j.jobId].insert(pair<string,int>(load[i].first,i+1));
     }
     globalQ.push_back(vj[vj.size()-1]); //keep self part
-
+    inputMapping[j.jobId].insert(pair<string,int>(ID,vj.size()));
 	
 
     cout << "Submit job done!! file names are: \n" << execFileName << "\n" << ipFileName << endl;
@@ -173,6 +182,7 @@ void Node::receive_IamUP(string newnodeid) {
             inputMapping[j.jobId].insert(pair<string,int>(newnodeid,i+1));
         }
         parent[newjid]=it->jobId;
+        inputMapping[newjid].insert(pair<string,int>(ID,vj.size()));
         globalQ.push_back(vj[vj.size()-1]);
         deque<Job>::iterator it1=it;
         it++;
@@ -199,6 +209,28 @@ void Node::nodeFail(string failnodeid) {
     nodeToJob.erase(failnodeid);
     sentNodes.erase(failnodeid);
     return;
+}
+
+void receive_result(string nodeid,string jobid,string opfile) {
+    opfile=filerename(opfile);
+    set<pair<string,int> >::iterator it=inputMapping[jobid].begin();
+    while(it!=inputMapping[jobid].end() && it->first!=nodeid) it++;
+    if(it==inputMapping[jobid].end()) return;
+    result[jobid].insert(pair<int,string>(it->second,opfile));
+    while(result[jobid].size()==inputMapping[jobid].size()) {
+        Application app;
+        string of=app.merge(result[jobid]);
+        of=filerename(of);
+        if(parent.find(jobid)!=parent.end()) {
+            string j1=parent[jobid];
+            result[j1].insert(pair<int,string>(0,of));
+            jobid=j1;
+        } else {
+            cout<< "Output is stored in "<< of<< endl;
+            break;
+        }
+    }
+    return; 
 }
 
 void Node::receiveMessage(){

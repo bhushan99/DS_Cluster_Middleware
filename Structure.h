@@ -36,7 +36,6 @@ using namespace std;
 
 #define MAX 256
 
-
 void down(int sem_id)
 {
 	struct sembuf sop;
