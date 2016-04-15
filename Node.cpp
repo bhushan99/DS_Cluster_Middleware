@@ -288,7 +288,6 @@ void Node::receiveMessage(){
             strcat(buffer1,(":"+port).c_str());
 	    }
         else if(buffer[0] == Mapping+'0'){
-            // cout << buffer << endl;
             string str(buffer);
             int idx = str.find("::");
             int idx1 = str.find(":",idx+2);
@@ -297,14 +296,9 @@ void Node::receiveMessage(){
             int idx4 = str.find(":",idx3+1);
             string execName, ipName, jobId, ownerId;
             execName = str.substr(idx+2,idx1-idx-2);
-            // cout << execName << endl;
             ipName = str.substr(idx1+1,idx2-idx1-1);
-            // cout << ipName << endl;
             jobId = str.substr(idx2+1,idx3-idx2-1);
-            // cout << jobId << endl;
             ownerId = str.substr(idx3+1,idx4-idx3-1);
-            // cout << ownerId << endl;
-            // cout << execName << " " << ipName << " " << jobId << " " << ownerId << endl;
             Job job;
             job.execFile = execName;
             job.ipFile = ipName;
@@ -402,87 +396,7 @@ void Node::receiveExecFile(){
     }
 }
 
-/*string Node::sendFile(string ip, string port, string fileName, int type){
-    int fileNameSize = fileName.size();
-    int maxsize = MAX - 16 - fileNameSize, lastMessage = 0;
-    int constantMessage;
 
-    if(type == 1)
-        constantMessage = InputSend;
-    else
-        constantMessage = JobSend;
-
-    char *tempBuffer=(char*)malloc(MAX*sizeof(char)),*buffer=(char*)malloc(MAX*sizeof(char)); 
-    FILE *fp=fopen(fileName.c_str(),"r");
-
-    fseek(fp,0,SEEK_END);
-    int f_sz=ftell(fp);
-    rewind(fp);
-
-    int size=0;
-    int nbytes=min(f_sz,maxsize);
-    
-    while((size=fread(tempBuffer,sizeof(char),nbytes,fp))>0){
-        if(size < maxsize)
-            lastMessage = 1;
-
-        sprintf(buffer, "%d::%d:%s:%s", constantMessage, lastMessage, fileName.c_str(), tempBuffer);
-        string ret = sendMessage(ip, port, buffer);
-
-        free(buffer);
-        free(tempBuffer);
-        buffer=(char*)malloc(MAX*sizeof(char));
-        tempBuffer=(char*)malloc(MAX*sizeof(char));
-        memset(buffer,0,MAX);
-        memset(tempBuffer,0,MAX);
-
-        f_sz-=size;
-        nbytes=min(f_sz,maxsize);
-    }   
-    fclose(fp);
-    cout<<" file sent\n";
-}*/
-
-// string Node::sendFile(string ip, string port, string fileName, int type){
-//     int fileNameSize = fileName.size();
-//     int maxsize = MAX - 16 - fileNameSize, lastMessage = 0;
-//     int constantMessage;
-
-//     if(type == 1)
-//         constantMessage = InputSend;
-//     else
-//         constantMessage = JobSend;
-
-//     char *tempBuffer=(char*)malloc(MAX*sizeof(char)),*buffer=(char*)malloc(MAX*sizeof(char)); 
-//     FILE *fp=fopen(fileName.c_str(),"r");
-
-//     fseek(fp,0,SEEK_END);
-//     int f_sz=ftell(fp);
-//     rewind(fp);
-
-//     int size=0;
-//     int nbytes=min(f_sz,maxsize);
-    
-//     while((size=fread(tempBuffer,sizeof(char),nbytes,fp))>0){
-//         if(size < maxsize)
-//             lastMessage = 1;
-
-//         sprintf(buffer, "%d::%d:%s:%s", constantMessage, lastMessage, fileName.c_str(), tempBuffer);
-//         string ret = sendMessage(ip, port, buffer);
-
-//         free(buffer);
-//         free(tempBuffer);
-//         buffer=(char*)malloc(MAX*sizeof(char));
-//         tempBuffer=(char*)malloc(MAX*sizeof(char));
-//         memset(buffer,0,MAX);
-//         memset(tempBuffer,0,MAX);
-
-//         f_sz-=size;
-//         nbytes=min(f_sz,maxsize);
-//     }   
-//     fclose(fp);
-//     cout<<" file sent" << endl;
-// }
 
 void Node::sendExecFile(string ip, string port, string fileName)
 {
@@ -537,19 +451,9 @@ void Node::sendExecFile(string ip, string port, string fileName)
     fclose(fp);
     shutdown(ps_id,2);
     cout << "exec file transfer successful" << endl;
-    // while((size=read(ps_id,buffer,MAX))>0){
-    //     fwrite(buffer,sizeof(char),size,fp);
-    //     free(buffer);
-    //     buffer=(char*)malloc(MAX*sizeof(char));
-    //     memset(buffer,0,MAX);
-    // }
-    // fclose(fp);
-    // cout<<pid<<"File "<<str.c_str()<<" download finished\n";
+    
 }
 
-// void receiveFile(){
-
-// }
 
 string Node::mapFilenametoJobId(string ip, string port, string execFileName, string ipFileName, string jobId, string ownerId)
 {
