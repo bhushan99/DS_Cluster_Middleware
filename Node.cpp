@@ -1,10 +1,13 @@
 #include "Node.h"
-
+#include <fstream>
 Node::Node(string ip, string port):ip(ip),port(port) { ID=ip+string(":")+port; }
 
 void Node::startUp(){
 	thread listenMessage (&Node::receiveMessage,this);
     listenMessage.detach();
+
+    thread listenFile(&Node::receiveExecFile,this);
+    listenFile.detach();
     	
 	for(int i=0; i<10; i++){
 		
@@ -151,6 +154,9 @@ string Node::sendMessage(string ip, string port, string msg){
 	return buffer;
 }
 
+
+
+
 void Node::receive_IamUP(string newnodeid) {
     deque<Job>::iterator it;
     for(it=globalQ.begin();it!=globalQ.end();) {
@@ -204,7 +210,8 @@ void Node::nodeFail(string failnodeid) {
 void Node::receiveMessage(){
 	int sockfd, newsockfd, portno;
     socklen_t clilen;
-    char buffer[256];
+    // char buffer[256];
+    char *buffer = (char*) malloc(MAX*sizeof(char));
     char buffer1[256];
     struct sockaddr_in serv_addr, cli_addr;
     int n;
@@ -218,6 +225,7 @@ void Node::receiveMessage(){
     serv_addr.sin_port = htons(portno);
     if (bind(sockfd, (struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) 
     	perror("bind()");
+    
     while(1){
 	    listen(sockfd,5);
 	    clilen = sizeof(cli_addr);
@@ -225,9 +233,10 @@ void Node::receiveMessage(){
 	    newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
 	    if (newsockfd < 0) 
 	        perror("accept()");
-	    bzero(buffer,256);
-	    bzero(buffer1,256);
-	    n = read(newsockfd,buffer,255);
+	    // bzero(buffer,256);
+	    memset(buffer, 0, MAX);
+        bzero(buffer1,256);
+        int n = read(newsockfd,buffer,MAX);
 	    if (n < 0) perror("ERROR reading from socket");
 	    if(buffer[0] == IAmUp+'0'){
             string str(buffer);
@@ -237,49 +246,122 @@ void Node::receiveMessage(){
             strcat(buffer1,ip.c_str());
             strcat(buffer1,(":"+port).c_str());
 	    }
-        else if(buffer[0] == JobSend + '0' || buffer[0] == InputSend + '0'){
-            string fileName;
-            bool isLast;
-            string str(buffer);
-            int idx = str.find("::");
-            int idx1 = str.find(":",idx+2);
-            int idx2 = str.find(":",idx1+1);
-            fileName = str.substr(idx1+1,idx2-idx1-1);
-            isLast = ((str.substr(idx+2,idx1-idx-2) == "0")? 0 : 1);
-            string message = str.substr(idx2+1);
-            char mes[256];
-            strcpy(mes,message.c_str());
-            FILE *fp = fopen(fileName.c_str(),"a");
-            fwrite(mes,sizeof(char),sizeof(mes),fp);
-            fclose(fp); 
-            strcpy(buffer1,string("success").c_str());
-            if(buffer[0] == InputSend + '0' and isLast == 1){
-                globalQ.push_back(inputJobMapping[fileName]);
-            }
-        }
-        else if(buffer[0] == Mapping + '0'){
+        else if(buffer[0] == Mapping+'0'){
+            // cout << buffer << endl;
             string str(buffer);
             int idx = str.find("::");
             int idx1 = str.find(":",idx+2);
             int idx2 = str.find(":",idx1+1);
             int idx3 = str.find(":",idx2+1);
-            struct Job job;
-            job.execFile = str.substr(idx+2, idx1-idx-2);
-            job.ipFile = str.substr(idx1+1,idx2-idx1-1);
-            job.jobId = str.substr(idx2+1, idx3-idx2-1);
-            job.ownerId = str.substr(idx3+1);
-            inputJobMapping[job.ipFile] = job;
+            int idx4 = str.find(":",idx3+1);
+            string execName, ipName, jobId, ownerId;
+            execName = str.substr(idx+2,idx1-idx-2);
+            // cout << execName << endl;
+            ipName = str.substr(idx1+1,idx2-idx1-1);
+            // cout << ipName << endl;
+            jobId = str.substr(idx2+1,idx3-idx2-1);
+            // cout << jobId << endl;
+            ownerId = str.substr(idx3+1,idx4-idx3-1);
+            // cout << ownerId << endl;
+            // cout << execName << " " << ipName << " " << jobId << " " << ownerId << endl;
+            Job job;
+            job.execFile = execName;
+            job.ipFile = ipName;
+            job.jobId = jobId;
+            job.ownerId = ownerId;
+            inputJobMapping[execName] = job;
+            strcat(buffer1,string("success").c_str());
+            cout << "inputJobMapping size: " << inputJobMapping.size() << endl;
+            // cout << execName << " " << job << endl;
         }
 	    cout << "size of set is " << sentNodes.size() << endl;
 	    n = write(newsockfd,buffer1,256);
 	    if (n < 0) perror("ERROR writing to socket");
-	}
-    
-    // close(newsockfd);
-    // close(sockfd);
+	
+    }
+    close(newsockfd);
+    close(sockfd);
 }
 
-string Node::sendFile(string ip, string port, string fileName, int type){
+void Node::receiveExecFile(){
+    int sockfd, newsockfd, portno;
+    socklen_t clilen;
+    char *buffer = (char*) malloc(MAX*sizeof(char));
+    char *buffer1 = (char*) malloc(MAX1*sizeof(char));
+    struct sockaddr_in serv_addr, cli_addr;
+    int n;
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) 
+        perror("Server Socket ");
+    bzero((char *) &serv_addr, sizeof(serv_addr));
+    portno = atoi((port).c_str())+1000;
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
+    serv_addr.sin_port = htons(portno);
+    if (bind(sockfd, (struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) 
+        perror("bind()");
+    
+    while(1){
+        listen(sockfd,5);
+        clilen = sizeof(cli_addr);
+        cout << "Will accept now" << endl;
+        newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+        if (newsockfd < 0) 
+            perror("accept()");
+        // bzero(buffer,256);
+        memset(buffer, 0, MAX);
+        memset(buffer1, 0, MAX1);
+        string fileName = "testing1";
+        FILE *fp2;
+        bool change = true;
+        int noOfColons = 1;
+        while(1){
+            n = read(newsockfd,buffer,MAX);
+            /**/
+            string str = "";
+            int i  = 0;
+            for(i = 0; i<n and change == true; i++){
+                if(noOfColons == 0){
+                    change = false;
+                    fp2 = fopen(str.substr(0,str.size()-1).c_str(),"wb");
+                    fileName = str.substr(0,str.size()-1);
+                    break;
+                }
+                str += buffer[i];
+                if(buffer[i] == ':'){
+                    noOfColons --;
+                }
+                
+            }
+            /**/
+            if(n <= 0)
+                break;
+
+            fwrite(buffer+i,sizeof(char), n-i, fp2);
+            free(buffer);
+            buffer = (char*) malloc(MAX*sizeof(char));
+            memset(buffer, 0, MAX);
+        }
+        fclose(fp2); 
+        cout << "I am stuck here " << endl;
+        cout << fileName << endl;
+        cout << inputJobMapping.size() << endl;
+        map<string,Job>::iterator it;
+        for(it = inputJobMapping.begin(); it != inputJobMapping.end(); it++){
+            cout << it->first << endl;
+        }
+        if(inputJobMapping.find(fileName) != inputJobMapping.end()){
+            globalQ.push_back(inputJobMapping[fileName]);
+            cout << "Job iserted in globalQ " << endl;
+        }
+        else{
+            cout << "Mapping is not found" << endl;
+        }
+
+    }
+}
+
+/*string Node::sendFile(string ip, string port, string fileName, int type){
     int fileNameSize = fileName.size();
     int maxsize = MAX - 16 - fileNameSize, lastMessage = 0;
     int constantMessage;
@@ -318,18 +400,123 @@ string Node::sendFile(string ip, string port, string fileName, int type){
     }   
     fclose(fp);
     cout<<" file sent\n";
+}*/
+
+// string Node::sendFile(string ip, string port, string fileName, int type){
+//     int fileNameSize = fileName.size();
+//     int maxsize = MAX - 16 - fileNameSize, lastMessage = 0;
+//     int constantMessage;
+
+//     if(type == 1)
+//         constantMessage = InputSend;
+//     else
+//         constantMessage = JobSend;
+
+//     char *tempBuffer=(char*)malloc(MAX*sizeof(char)),*buffer=(char*)malloc(MAX*sizeof(char)); 
+//     FILE *fp=fopen(fileName.c_str(),"r");
+
+//     fseek(fp,0,SEEK_END);
+//     int f_sz=ftell(fp);
+//     rewind(fp);
+
+//     int size=0;
+//     int nbytes=min(f_sz,maxsize);
+    
+//     while((size=fread(tempBuffer,sizeof(char),nbytes,fp))>0){
+//         if(size < maxsize)
+//             lastMessage = 1;
+
+//         sprintf(buffer, "%d::%d:%s:%s", constantMessage, lastMessage, fileName.c_str(), tempBuffer);
+//         string ret = sendMessage(ip, port, buffer);
+
+//         free(buffer);
+//         free(tempBuffer);
+//         buffer=(char*)malloc(MAX*sizeof(char));
+//         tempBuffer=(char*)malloc(MAX*sizeof(char));
+//         memset(buffer,0,MAX);
+//         memset(tempBuffer,0,MAX);
+
+//         f_sz-=size;
+//         nbytes=min(f_sz,maxsize);
+//     }   
+//     fclose(fp);
+//     cout<<" file sent" << endl;
+// }
+
+void Node::sendExecFile(string ip, string port, string fileName)
+{
+    int fis_id,ps_id;
+    struct sockaddr_in ps_addr,fis_addr;
+    
+    if((ps_id=socket(AF_INET,SOCK_STREAM,0))==-1){
+        perror("Socket() for Peer Server");
+        return;
+    }
+   
+    ps_addr.sin_family=AF_INET;
+    ps_addr.sin_addr.s_addr=inet_addr(ip.c_str());
+    ps_addr.sin_port=htons(atoi(port.c_str())+1000);
+    int ps_len=sizeof(ps_addr);
+
+    if(connect(ps_id,(struct sockaddr *)&ps_addr,ps_len)==-1){
+        perror("connect()");
+        cout<<"Cannot connect to Peer Server\n";
+        return;
+    }
+    
+    FILE *fp=fopen(fileName.c_str(),"rb");
+    fseek(fp,0,SEEK_END);
+    int f_sz = ftell(fp);
+    rewind(fp);
+    int size = 0, nbytes = min(f_sz, MAX-1);
+   
+    char *buffer = (char*)malloc(MAX*sizeof(char)), *buffer1 = (char*)malloc(MAX1*sizeof(char));
+    memset(buffer, 0, MAX);
+    memset(buffer1, 0, MAX1);
+    strcpy(buffer,(fileName+string("test")).c_str());
+    int sz = fileName.size() + 4;
+    // for(int i=0;i<10;i++)
+        // buffer[i] = ':';
+    buffer[sz++] = ':';
+    write(ps_id,buffer,sz);
+    free(buffer);
+    buffer = (char*)malloc(MAX*sizeof(char));
+    memset(buffer,0,MAX);
+    while((size = fread(buffer,sizeof(char), nbytes, fp)) > 0)
+    {
+        
+        write(ps_id, buffer, size);
+        free(buffer);
+        buffer = (char*)malloc(MAX*sizeof(char));
+        memset(buffer,0,MAX);
+
+        f_sz -= size;
+        nbytes = min(f_sz, MAX-1);
+    }
+    fclose(fp);
+    shutdown(ps_id,2);
+    cout << "exec file transfer successful" << endl;
+    // while((size=read(ps_id,buffer,MAX))>0){
+    //     fwrite(buffer,sizeof(char),size,fp);
+    //     free(buffer);
+    //     buffer=(char*)malloc(MAX*sizeof(char));
+    //     memset(buffer,0,MAX);
+    // }
+    // fclose(fp);
+    // cout<<pid<<"File "<<str.c_str()<<" download finished\n";
 }
 
-void receiveFile(){
+// void receiveFile(){
 
-}
+// }
 
-void Node::mapFilenametoJobId(string ip, string port, string execFileName, string ipFileName, string jobId, string ownerId)
+string Node::mapFilenametoJobId(string ip, string port, string execFileName, string ipFileName, string jobId, string ownerId)
 {
     char* message = (char*)malloc(MAX*sizeof(char));
-    sprintf(message, "%d::%s:%s:%s:%s", Mapping, execFileName.c_str(), ipFileName.c_str(), jobId.c_str(), ownerId.c_str());
+    sprintf(message, "%d::%s:%s:%s:%s:", Mapping, (execFileName+string("test")).c_str(), ipFileName.c_str(), jobId.c_str(), ownerId.c_str());
     string ret = sendMessage(ip, port, message);
     free(message);
+    return ret;
 }
 
 string Node::getIp(){

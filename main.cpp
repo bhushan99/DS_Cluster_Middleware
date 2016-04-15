@@ -9,8 +9,19 @@
 
 int main(int argc, char *argv[]){
 	Node node = Node(argv[1],argv[2]);
+	string str = argv[2];
 	node.startUp();
-
+	if(str == "12342")
+	{
+		// node.sendExecFile("127.0.0.1", "12341", "testing/temp");
+		string out = node.mapFilenametoJobId("127.0.0.1","12341","testing/temp","testing/inp.txt","jobId","ownerId");
+		if(out == "success")
+			cout << "Mapping done" << endl;
+		node.sendExecFile("127.0.0.1", "12341", "testing/inp.txt");
+		node.sendExecFile("127.0.0.1", "12341", "testing/temp");
+		// cout <<"***********************" << endl;
+		// node.sendExecFile("127.0.0.1", "12341", "testing/temp");
+	}
 	char execFile[100], inputFile[100];
 	string choice, ipFileName, execFileName;
 	int pid, parentSemId, childSemId, mutex;

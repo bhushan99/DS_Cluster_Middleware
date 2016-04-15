@@ -35,6 +35,7 @@ using namespace std;
 #define MUTEX 25
 
 #define MAX 256
+#define MAX1 10
 
 
 void down(int sem_id)

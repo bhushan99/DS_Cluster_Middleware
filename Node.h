@@ -15,14 +15,17 @@ public:
 	string getPort();
 	string sendMessage(string ip, string port, string msg);
 	void receiveMessage();
-	string sendFile(string ip, string port, string fileName, int type);
-	void receiveFile();
-	void mapFilenametoJobId(string ip, string port, string execFileName, string ipFileName, string jobId, string ownerId);
+	// string sendFile(string ip, string port, string fileName, int type);
+	void sendExecFile(string ip, string port, string fileName);
+	// void receiveFile();
+	void receiveExecFile();
+	string mapFilenametoJobId(string ip, string port, string execFileName, string ipFileName, string jobId, string ownerId);
 	void receive_IamUP(string newnodeid);
 	void nodeFail(string failnodeid);
+	deque<Job> localQ,globalQ;
 private:
 	string ip,port,ID; // ID= ip+":"+port, jobID= exFile+":"+ipFile
-	deque<Job> localQ,globalQ;
+	
 	set<string> sentNodes; // have to send heartbeat message to this nodes.
 	map<string, vector<Job> > nodeToJob; // mapping for nodeid to set of job
 	map<string, FILE *> filePointer;
