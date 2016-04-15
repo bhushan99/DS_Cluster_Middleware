@@ -20,6 +20,7 @@ public:
 	void mapFilenametoJobId(string ip, string port, string execFileName, string ipFileName, string jobId, string ownerId);
 	void receive_IamUP(string newnodeid);
 	void nodeFail(string failnodeid);
+	void receive_result(string nodeid,string jobid,string opfile);
 private:
 	string ip,port,ID; // ID= ip+":"+port, jobID= exFile+":"+ipFile
 	deque<Job> localQ,globalQ;
@@ -31,7 +32,7 @@ private:
 	map<string,string> md5_original; //md5 Job to original file names in job
 	vector<pair <string,int> > load; // info of #jobs in waiting Q per nodeID
 	map<string, Job> inputJobMapping; // mapping of input file to Job
-	map<string,string> parent; // point to parent job on same node
+	map<string,pair<string,int> > parent; // point to parent job on same node
 	map<string,set<pair<int,string> > > result; // jobid -> index,o/p filename to store result files
 };
 

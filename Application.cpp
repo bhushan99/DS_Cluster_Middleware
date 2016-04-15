@@ -9,15 +9,6 @@ pair<string,string> splitcolon(string NodeID) {
     return pair<string,string>(a,NodeID.substr(i+1));
 }
 
-inline string filerename(string from) {
-    MD5 md5;
-    char buf[256];
-    strcpy(buf,from.c_str());
-    string exf(md5.digestFile(buf));
-    rename(from.c_str(),exf.c_str());
-    return exf;
-}
-
 vector<Job> Application::split(Job job, int n){
 	string in=job.ipFile, ex=job.execFile;
 	MD5 md5;

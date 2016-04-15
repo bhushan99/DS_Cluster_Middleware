@@ -29,15 +29,6 @@ bool cmp(const pair<string,int>& p1,const pair<string,int>& p2) {
     return p1.second<p2.second;
 }
 
-inline string filerename(string from) {
-    MD5 md5;
-    char buf[256];
-    strcpy(buf,from.c_str());
-    string exf(md5.digestFile(buf));
-    rename(from.c_str(),exf.c_str());
-    return exf;
-}
-
 void getDestNodes(vector<pair <string,int> >& load) {
     sort(load.begin(),load.end(),cmp);
     int mx=0;
@@ -162,6 +153,7 @@ string Node::sendMessage(string ip, string port, string msg){
 
 void Node::receive_IamUP(string newnodeid) {
     deque<Job>::iterator it;
+    int ind=0;
     for(it=globalQ.begin();it!=globalQ.end();) {
         Job j=*it;
         if(j.ownerId!=ID) {it++;continue;}
@@ -181,12 +173,13 @@ void Node::receive_IamUP(string newnodeid) {
             nodeToJob[newnodeid].push_back(vj[i]);
             inputMapping[j.jobId].insert(pair<string,int>(newnodeid,i+1));
         }
-        parent[newjid]=it->jobId;
+        set<pair<string,int> >::iterator z=inputMapping[it->jobId].begin();
+        while(z->first!=ID) z++;
+        parent[newjid]=pair<string,int>(it->jobId,z->second);
+        //inputMapping[it->jobId].erase(z);
         inputMapping[newjid].insert(pair<string,int>(ID,vj.size()));
-        globalQ.push_back(vj[vj.size()-1]);
-        deque<Job>::iterator it1=it;
-        it++;
-        globalQ.erase(it1);
+        globalQ[ind]=vj[vj.size()-1];
+        it++;ind++;
     }
 }
 
@@ -202,7 +195,10 @@ void Node::nodeFail(string failnodeid) {
         strcpy(buf,j.ipFile.c_str());
         string ipf(md5.digestFile(buf));
         string newjid=exf+string(":")+ipf;
-        parent[newjid]=it->jobId;
+        set<pair<string,int> >::iterator z=inputMapping[it->jobId].begin();
+        while(z->first!=failnodeid) z++;
+        parent[newjid]=pair<string,int>(it->jobId,z->second);
+        //inputMapping[it->jobId].erase(z);
         submitJob(it->execFile,it->ipFile);
         it++;
     }
@@ -211,7 +207,7 @@ void Node::nodeFail(string failnodeid) {
     return;
 }
 
-void receive_result(string nodeid,string jobid,string opfile) {
+void Node::receive_result(string nodeid,string jobid,string opfile) {
     opfile=filerename(opfile);
     set<pair<string,int> >::iterator it=inputMapping[jobid].begin();
     while(it!=inputMapping[jobid].end() && it->first!=nodeid) it++;
@@ -220,15 +216,27 @@ void receive_result(string nodeid,string jobid,string opfile) {
     while(result[jobid].size()==inputMapping[jobid].size()) {
         Application app;
         string of=app.merge(result[jobid]);
+        result.erase(jobid);
+        inputMapping.erase(jobid);
         of=filerename(of);
         if(parent.find(jobid)!=parent.end()) {
-            string j1=parent[jobid];
-            result[j1].insert(pair<int,string>(0,of));
+            string j1=parent[jobid].first;
+            result[j1].insert(pair<int,string>(parent[jobid].second,of));
+            parent.erase(jobid);
             jobid=j1;
         } else {
             cout<< "Output is stored in "<< of<< endl;
             break;
         }
+    }
+    
+    if(nodeToJob[nodeid].size()==1) {
+        nodeToJob.erase(nodeid);
+        sentNodes.erase(nodeid); 
+    } else {
+        vector<Job>::iterator it=nodeToJob[nodeid].begin();
+        while(it->jobId!=jobid) it++;
+        nodeToJob[nodeid].erase(it);
     }
     return; 
 }
