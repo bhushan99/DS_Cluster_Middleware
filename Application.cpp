@@ -58,6 +58,7 @@ string Application::merge(set<pair<int,string> > result){ // returns final o/p f
 		is>>x;
 		is.close();
 		ans+=x;
+		it++;
 	}
 	ofstream os;
 	os.open(t);

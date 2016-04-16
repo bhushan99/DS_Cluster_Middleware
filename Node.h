@@ -9,7 +9,7 @@ class Node{
 public:
 	Node(string ip, string port);
 	void startUp();
-	void submitJob(string execFileName, string ipFileName);
+	void submitJob(string execFileName, string ipFileName, bool b=true);
 	void heartBeat();
 	string getIp();
 	string getPort();

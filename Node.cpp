@@ -80,7 +80,7 @@ bool cmp(const pair<string,int>& p1,const pair<string,int>& p2) {
 }
 
 void getDestNodes(vector<pair <string,int> >& load) {
-
+    if(!load.size()) return;
     sort(load.begin(),load.end(),cmp);
     int mx=0;
     for(int i=0;i<load.size()-1;i++) mx=max(mx,load[i+1].second-load[i].second);
@@ -93,7 +93,7 @@ void getDestNodes(vector<pair <string,int> >& load) {
     }
 } 
 
-void Node::submitJob(string execFileName, string ipFileName){
+void Node::submitJob(string execFileName, string ipFileName,bool b){
     cout << execFileName << " " << ipFileName << endl;
     MD5 md5;
     char buf[256];
@@ -119,11 +119,10 @@ void Node::submitJob(string execFileName, string ipFileName){
         int temp = stoi(out);
         load.push_back(make_pair(ips[i]+"<"+ports[i],temp));
     }
-    // getDestNodes(load);
-    // cout << "I am here" << endl;
+    getDestNodes(load);
     Application app;
     vector<Job> vj= app.split(j,load.size()+1);
-    // cout << "size of vector job is " << vj.size() << endl;
+    cout << "size of vector job is " << vj.size() << endl;
     for(int i=0;i<vj.size()-1;i++) //send files to nodes in load[i]
     {
         string sentip = load[i].first.substr(0,load[i].first.find("<"));
@@ -139,8 +138,7 @@ void Node::submitJob(string execFileName, string ipFileName){
     cout << getpid() <<"size of globalQ is " << globalQ.size() << endl;
     inputMapping[j.jobId].insert(pair<string,int>(ID,vj.size()));
 	
-
-    cout << "Submit job done!! file names are: \n" << execFileName << "\n" << ipFileName << endl;
+    if(b) cout << "Submit job done!! file names are: \n" << execFileName << "\n" << ipFileName << endl;
 }
 
 void Node::heartBeat(){
@@ -213,9 +211,6 @@ string Node::sendMessage(string ip, string port, string msg){
 	return buffer;
 }
 
-
-
-
 void Node::receive_IamUP(string newnodeid) {
     deque<Job>::iterator it;
     int ind=0;
@@ -269,8 +264,7 @@ void Node::nodeFail(string failnodeid) {
         set<pair<string,int> >::iterator z=inputMapping[it->jobId].begin();
         while(z->first!=failnodeid) z++;
         parent[newjid]=pair<string,int>(it->jobId,z->second);
-        //inputMapping[it->jobId].erase(z);
-        submitJob(it->execFile,it->ipFile);
+        submitJob(it->execFile,it->ipFile,false);
         it++;
     }
     nodeToJob.erase(failnodeid);
@@ -301,7 +295,7 @@ void Node::receive_result(string nodeid,string jobid,string opfile) {
             break;
         }
     }
-    
+    if(nodeid==ID) return;
     if(nodeToJob[nodeid].size()==1) {
         nodeToJob.erase(nodeid);
         sentNodes.erase(nodeid); 
@@ -462,8 +456,6 @@ void Node::receiveExecFile(){
 
     }
 }
-
-
 
 void Node::sendExecFile(string ip, string port, string fileName)
 {
