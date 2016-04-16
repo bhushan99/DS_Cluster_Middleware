@@ -71,6 +71,7 @@ void Node::executeJob(){
             pair<string, string> addr = split_(job.ownerId);
             cout<<job.ipFile.size()<<endl;
             sendExecFile(addr.first, addr.second, string("out_")+job.ipFile);
+            sendMessage(addr.first, addr.second, to_string(Result)+"::"+ID+":"+job.jobId+":"+string("out_")+job.ipFile+":");
         }
     }
 }
@@ -371,6 +372,17 @@ void Node::receiveMessage(){
         else if(buffer[0] == Query+'0'){
             int te = globalQ.size();
             sprintf(buffer1,"%d",te);
+        }
+        else if(buffer[0] == Result + '0'){
+            string str(buffer);
+            int idx = str.find("::");
+            int idx1 = str.find(":",idx+2);
+            int idx2 = str.find(":",idx1+1);
+            int idx3 = str.find(":",idx2+1);
+            string senderId = str.substr(idx+2,idx1-idx-2);
+            string jobId = str.substr(idx1+1,idx2-idx1-1);
+            string opFile = str.substr(idx2+1,idx3-idx2-1);
+            receive_result(senderId,jobId,opFile+"test");
         }
 	    cout << "size of set is " << sentNodes.size() << endl;
 	    n = write(newsockfd,buffer1,256);
