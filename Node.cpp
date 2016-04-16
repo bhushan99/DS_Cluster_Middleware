@@ -37,6 +37,7 @@ void Node::startUp(){
 void Node::executeJob(){
     while(1){
         sleep(5);
+
         cout<<getpid()<< " GQ : "<<globalQ.size()<<endl;
         if(globalQ.empty())
             continue;
@@ -51,7 +52,8 @@ void Node::executeJob(){
         char *arglist[4];
         arglist[0] = (char *)malloc(256*sizeof(char)); strcpy(arglist[0],job.execFile.c_str());
         arglist[1] = (char *)malloc(256*sizeof(char)); strcpy(arglist[1],job.ipFile.c_str());
-        arglist[2] = (char *)malloc(256*sizeof(char)); strcpy(arglist[2],(string("out_")+job.ipFile).c_str());
+        arglist[2] = (char *)malloc(256*sizeof(char)); 
+            strcpy(arglist[2],(string("out_")+job.ipFile).c_str());
         arglist[3] = NULL;
         char buf[256];
         cout << "testing" << endl;
@@ -60,7 +62,9 @@ void Node::executeJob(){
         int pid, status;
         if((pid = fork()) == 0){
             execvp(buf,arglist);
+            exit(0);
         }
+        // sleep(1);
         free(arglist[0]);
         free(arglist[1]);
         free(arglist[2]);
@@ -70,7 +74,9 @@ void Node::executeJob(){
         else {
             pair<string, string> addr = split_(job.ownerId);
             cout<<job.ipFile.size()<<endl;
+            cout << addr.first << " " << addr.second << " " << string("out_")+job.ipFile<< endl;
             sendExecFile(addr.first, addr.second, string("out_")+job.ipFile);
+            cout << "OK" << endl;
             sendMessage(addr.first, addr.second, to_string(Result)+"::"+ID+":"+job.jobId+":"+string("out_")+job.ipFile+":");
         }
     }
@@ -120,6 +126,7 @@ void Node::submitJob(string execFileName, string ipFileName,bool b){
         int temp = stoi(out);
         load.push_back(make_pair(ips[i]+"<"+ports[i],temp));
     }
+    cout << "size of load " << load.size() << endl;
     getDestNodes(load);
     Application app;
     vector<Job> vj= app.split(j,load.size()+1);
@@ -129,6 +136,8 @@ void Node::submitJob(string execFileName, string ipFileName,bool b){
         string sentip = load[i].first.substr(0,load[i].first.find("<"));
         string sentport = load[i].first.substr(load[i].first.find("<")+1);
         mapFilenametoJobId(sentip,sentport,vj[i].execFile,vj[i].ipFile,vj[i].jobId,vj[i].ownerId);
+        // cout << "execFile " << vj[i].execFile << endl;
+        // cout << "ipFile " << vj[i].ipFile << endl;
         sendExecFile(sentip, sentport, vj[i].ipFile);
         sendExecFile(sentip, sentport, vj[i].execFile);
         sentNodes.insert(load[i].first);
@@ -367,7 +376,7 @@ void Node::receiveMessage(){
             inputJobMapping[execName] = job;
             strcat(buffer1,string("success").c_str());
             cout << "inputJobMapping size: " << inputJobMapping.size() << endl;
-            // cout << execName << " " << job << endl;
+            cout << execName << endl;
         }
         else if(buffer[0] == Query+'0'){
             int te = globalQ.size();
@@ -382,7 +391,7 @@ void Node::receiveMessage(){
             string senderId = str.substr(idx+2,idx1-idx-2);
             string jobId = str.substr(idx1+1,idx2-idx1-1);
             string opFile = str.substr(idx2+1,idx3-idx2-1);
-            receive_result(senderId,jobId,opFile+"test");
+            receive_result(senderId,jobId,opFile);
         }
 	    cout << "size of set is " << sentNodes.size() << endl;
 	    n = write(newsockfd,buffer1,256);
@@ -453,11 +462,16 @@ void Node::receiveExecFile(){
             memset(buffer, 0, MAX);
         }
         fclose(fp2); 
+        cout << "Exec file transfer successful" << endl;
         
         map<string,Job>::iterator it;
+        cout << inputJobMapping.count(fileName) << endl;
         for(it = inputJobMapping.begin(); it != inputJobMapping.end(); it++){
-            cout << it->first << endl;
+            cout << fileName.size() <<","<< (it->first).size() << endl;
+
         }
+        cout << "filename is " << fileName << endl;
+        cout << inputJobMapping.count(fileName) << endl;
         if(inputJobMapping.find(fileName) != inputJobMapping.end()){
             globalQ.push_back(inputJobMapping[fileName]);
             cout << "Job iserted in globalQ " << endl;
@@ -499,8 +513,8 @@ void Node::sendExecFile(string ip, string port, string fileName)
     char *buffer = (char*)malloc(MAX*sizeof(char)), *buffer1 = (char*)malloc(MAX1*sizeof(char));
     memset(buffer, 0, MAX);
     memset(buffer1, 0, MAX1);
-    strcpy(buffer,(fileName+string("test")).c_str());
-    int sz = fileName.size() + 4;
+    strcpy(buffer,(fileName.c_str()));
+    int sz = fileName.size();
     // for(int i=0;i<10;i++)
         // buffer[i] = ':';
     buffer[sz++] = ':';
@@ -521,7 +535,7 @@ void Node::sendExecFile(string ip, string port, string fileName)
     }
     fclose(fp);
     shutdown(ps_id,2);
-    cout << "exec file transfer successful" << endl;
+    // cout << "file transfer successful " << fileName << endl;
     
 }
 
@@ -529,7 +543,7 @@ void Node::sendExecFile(string ip, string port, string fileName)
 void Node::mapFilenametoJobId(string ip, string port, string execFileName, string ipFileName, string jobId, string ownerId)
 {
     char* message = (char*)malloc(MAX*sizeof(char));
-    sprintf(message, "%d::%s:%s:%s:%s:", Mapping, (execFileName+string("test")).c_str(), ipFileName.c_str(), jobId.c_str(), ownerId.c_str());
+    sprintf(message, "%d::%s:%s:%s:%s:", Mapping, execFileName.c_str(), ipFileName.c_str(), jobId.c_str(), ownerId.c_str());
     string ret = sendMessage(ip, port, message);
     free(message);
     return ;

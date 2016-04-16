@@ -45,11 +45,14 @@ int main(int argc, char *argv[]){
 			cin >> inputFile;
 
 			char fullPathEx[PATH_MAX], fullPathInp[PATH_MAX];
-			realpath(execFile, fullPathEx);
-			realpath(inputFile, fullPathInp);
+			// realpath(execFile, fullPathEx);
+			// realpath(inputFile, fullPathInp);
 			
-			string execFileName (fullPathEx);
-			string ipFileName (fullPathInp);
+			// string execFileName (fullPathEx);
+			// string ipFileName (fullPathInp);
+
+			string execFileName (execFile);
+			string ipFileName (inputFile);
 
 			node.submitJob(execFileName, ipFileName);
 			

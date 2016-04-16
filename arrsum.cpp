@@ -15,7 +15,9 @@ int main(int argc, char const *argv[])
 	}
 	is.close();
 	ofstream os;
+	// cout << argv[2] << endl;
 	os.open(argv[2]);
+	// cout << argv[2]<< endl;
 	os<<ans<<endl;
 	os.close();
 	cout<<"Done!\n";
