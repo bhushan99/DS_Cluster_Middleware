@@ -11,6 +11,9 @@ void Node::startUp(){
 
     thread executeJob1(&Node::executeJob, this);
     executeJob1.detach();
+
+    // thread submitJobT(&Node::submitJobThread, this);
+    // submitJobT.detach();
     	
 	for(int i=0; i<10; i++){
 		
@@ -34,7 +37,7 @@ void Node::startUp(){
 void Node::executeJob(){
     while(1){
         sleep(5);
-        
+        cout<<getpid()<< " GQ : "<<globalQ.size()<<endl;
         if(globalQ.empty())
             continue;
         cout << "thread working fine " << globalQ.size() << endl;
@@ -52,7 +55,8 @@ void Node::executeJob(){
         arglist[3] = NULL;
         char buf[256];
         cout << "testing" << endl;
-        sprintf(buf,"%s/arrsum",get_current_dir_name());
+        if(job.execFile[0]=='/') sprintf(buf,"%s",job.execFile.c_str());
+        else sprintf(buf,"%s/%s",get_current_dir_name(),job.execFile.c_str());
         int pid, status;
         if((pid = fork()) == 0){
             execvp(buf,arglist);
@@ -62,10 +66,12 @@ void Node::executeJob(){
         free(arglist[2]);
         waitpid(pid,&status,0);
         cout << "Job is finished" << endl;
-        pair<string, string> addr = split_(job.ownerId);
-        cout<<job.ipFile.size()<<endl;
-        sendExecFile(addr.first, addr.second, string("out_")+job.ipFile);
-
+        if(job.ownerId==ID) receive_result(ID,job.jobId,string("out_")+job.ipFile);
+        else {
+            pair<string, string> addr = split_(job.ownerId);
+            cout<<job.ipFile.size()<<endl;
+            sendExecFile(addr.first, addr.second, string("out_")+job.ipFile);
+        }
     }
 }
 
@@ -130,7 +136,7 @@ void Node::submitJob(string execFileName, string ipFileName){
         inputMapping[j.jobId].insert(pair<string,int>(load[i].first,i+1));
     }
     globalQ.push_back(vj[vj.size()-1]); //keep self part
-    cout << "size of globalQ is " << globalQ.size() << endl;
+    cout << getpid() <<"size of globalQ is " << globalQ.size() << endl;
     inputMapping[j.jobId].insert(pair<string,int>(ID,vj.size()));
 	
 
@@ -523,6 +529,17 @@ void Node::mapFilenametoJobId(string ip, string port, string execFileName, strin
     string ret = sendMessage(ip, port, message);
     free(message);
     return ;
+}
+
+void Node::submitJobThread() {
+    string a,b;
+    while(1) {
+        cout<< "Enter Executable File: ";
+        cin>>a;
+        cout<< "Enter Input File: ";
+        cin>>b;
+        submitJob(a,b);
+    }
 }
 
 string Node::getIp(){

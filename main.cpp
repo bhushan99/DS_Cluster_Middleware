@@ -51,16 +51,8 @@ int main(int argc, char *argv[]){
 			string execFileName (fullPathEx);
 			string ipFileName (fullPathInp);
 
-			pid = fork();
-			if(pid == 0)
-			{
-				node.submitJob(execFileName, ipFileName);
-				exit(0);
-			}
-			else
-			{
-				wait(&pid);
-			}
+			node.submitJob(execFileName, ipFileName);
+			
 		}
 		else if(choice[0] == 'n')
 		{

@@ -25,6 +25,7 @@ public:
 	deque<Job> localQ,globalQ;
 	void receive_result(string nodeid,string jobid,string opfile);
 	void executeJob();
+	void submitJobThread();
 private:
 	string ip,port,ID; // ID= ip+":"+port, jobID= exFile+":"+ipFile
 	
